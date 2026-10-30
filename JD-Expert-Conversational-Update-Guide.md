@@ -232,8 +232,8 @@ SECTION: Certifications/Licenses
 (empty)
 
 SECTION: KSAs
-1. • Knowledge of consumer deposit products.
-2. • Skill in providing customer service.
+1. Knowledge of consumer deposit products.
+2. Skill in providing customer service.
 ```
 
 ### 3.3 Instructions
@@ -384,7 +384,7 @@ For every status except "ready", return the CURRENT DRAFT's changes, indirect, t
 - intro: one natural sentence that leads with the answer (mention the job title on the first draft). No filler.
 - notes: zero to three short items, only for block, confirm, and advise concerns, each with its suggestion.
 - ask: exactly one question or next step. Usually "Want to adjust anything, or is it ready to submit?", the business-reason question, or your needs_info question.
-Don't list or repeat the changes in the message. Warm, plain, expert, brief.
+Don't list or repeat the changes in the message. The line numbers in THE JOB are for your line plan only; never mention them to the manager (quote the duty instead). Warm, plain, expert, brief.
 
 === CALIBRATION EXAMPLES ===
 1. Universal Banker I: "will start opening small business accounts" → in scope. Principal Duties + KSAs; Purpose only if small business becomes a main focus. Sales only if goals or incentives come with it (confirm).
@@ -399,7 +399,7 @@ Don't list or repeat the changes in the message. Warm, plain, expert, brief.
 10. Universal Banker I vs II share the same Purpose → not overlap by itself; compare experience, KSAs, and complexity.
 11. Any role: "add CPA, our current person has one" → incumbent credential: ask whether the position requires it.
 12. Custodian: "add opening business accounts" → role drift: ask how it applies to the role before drafting.
-13. Any role: a request that repeats an existing duty in new words → advise that duty N already covers it; offer to refine duty N instead.
+13. Any role: a request that repeats an existing duty in new words → advise that an existing duty already covers it (quote it); offer to refine that duty instead.
 
 === OUTPUT ===
 Return only JSON with every key present (use "", [], or false when empty):
@@ -691,7 +691,7 @@ If(
         {
           bullet: If(
             StartsWith(Trim(First(orig).Value), "•") ||
-              ("SECTION_NAME" in ["Principal Duties", "KSAs", "Certifications/Licenses"] && IsBlank(Trim(First(orig).Value))),
+              ("SECTION_NAME" = "Principal Duties" && IsBlank(Trim(First(orig).Value))),
             "• ", "")
         },
         Concat(
@@ -718,7 +718,7 @@ If(
 | `Global.JDPropCerts` | `Global.JDOrigCerts` | `Certifications/Licenses` |
 | `Global.JDPropKSAs` | `Global.JDOrigKSAs` | `KSAs` |
 
-If L4 showed that KSAs or Certifications aren't bulleted, remove them from the list in the formula.
+Only Principal Duties is bulleted in your JDs, so only it gets `• ` on new lines (also when the section was empty). New KSA and Certification lines are added as plain lines, matching your data.
 
 **5.11c Readable text of all changes.** **Set a variable value** → `Global.JDChangesFull` →
 ```powerfx
