@@ -408,17 +408,17 @@ Return only JSON with every key present (use "", [], or false when empty):
 - scope_verdict: in_scope | level_drift | role_drift | scope_creep | not_job_content.
 - scope_note: one sentence, or "".
 - status: ready | needs_info | no_change | not_feasible | hard_stop.
-- touched: section names you changed in THIS turn (all changed sections on a first draft).
+- touched: the sections you changed in THIS turn (all changed sections on a first draft), each as {"section": "exact section name"}.
 - changes: every section that differs from THE JOB, as the complete current set. For each: section (exact name); summary (one short line); lines: the complete new section in order. Each item is {"keep": n, "new": ""}, which copies original line n exactly, or {"keep": 0, "new": "text"} for new or reworded text. Leaving out an original line number removes that line. Use each original line number at most once, and only numbers that exist in THE JOB for that section. A section shown as "(empty)" has no lines, so use only keep 0 there. Purpose is usually a single {"keep": 0, "new": "..."}.
 - unchanged: on a first draft or broadened request, the sections you checked and left alone, each with a short reason; otherwise [].
 - indirect: accumulated; carry forward items that still apply. Each: field, current, evidence, question.
 - findings: this turn's concerns. Each: severity (block | confirm | advise), about, note, suggestion.
 - hard_stops: only those in the LATEST REQUEST. Each: field, request.
-- flsa: review_requested (true/false), concern, triggers (array of short phrases, accumulated).
-- title: requested (true/false), proposed, reason, supporting, flags (array).
-- reasons: array of reasons from the reason list (exact spelling).
+- flsa: review_requested (true/false), concern, triggers (accumulated; each as {"trigger": "short phrase"}).
+- title: requested (true/false), proposed, reason, supporting, flags (each as {"flag": "text"}).
+- reasons: each as {"reason": "a reason from the reason list, exact spelling"}.
 - justification: the business justification in the manager's words, or "".
-- message: intro, notes (array of strings), ask.
+- message: intro, notes (each as {"note": "text"}), ask.
 ```
 
 ### 3.4 Output JSON
@@ -431,7 +431,7 @@ Return only JSON with every key present (use "", [], or false when empty):
   "scope_verdict": "in_scope",
   "scope_note": "",
   "status": "ready",
-  "touched": ["Principal Duties"],
+  "touched": [ { "section": "Principal Duties" } ],
   "changes": [
     {
       "section": "Principal Duties",
@@ -446,14 +446,14 @@ Return only JSON with every key present (use "", [], or false when empty):
   "indirect": [ { "field": "Sales/Non-Sales", "current": "Non-Sales", "evidence": "Business account opening may carry goals.", "question": "Will this role have sales goals or incentives?" } ],
   "findings": [ { "severity": "advise", "about": "Level", "note": "A similar duty appears in Universal Banker II.", "suggestion": "Keep it limited to account opening." } ],
   "hard_stops": [ { "field": "Salary Type", "request": "Make this role salaried" } ],
-  "flsa": { "review_requested": false, "concern": "", "triggers": ["Decision-making authority"] },
-  "title": { "requested": false, "proposed": "", "reason": "", "supporting": "", "flags": ["Job Architecture review: tenure given as justification"] },
-  "reasons": ["Adding/Removing Responsibilities"],
+  "flsa": { "review_requested": false, "concern": "", "triggers": [ { "trigger": "Decision-making authority" } ] },
+  "title": { "requested": false, "proposed": "", "reason": "", "supporting": "", "flags": [ { "flag": "Job Architecture review: tenure given as justification" } ] },
+  "reasons": [ { "reason": "Adding/Removing Responsibilities" } ],
   "justification": "",
-  "message": { "intro": "Got it.", "notes": ["One short note."], "ask": "Want to adjust anything, or is it ready to submit?" }
+  "message": { "intro": "Got it.", "notes": [ { "note": "One short note." } ], "ask": "Want to adjust anything, or is it ready to submit?" }
 }
 ```
-Every array in the example has one complete item, so all the fields are kept.
+Every array in the example has one complete item, so all the fields are kept. Lists of plain text are wrapped in one-key objects (`section`, `trigger`, `flag`, `reason`, `note`), because the JSON output format doesn't support arrays of plain strings.
 
 ### 3.5 Test in the editor
 
@@ -648,7 +648,7 @@ Below the 5.8 block, add three **Set a variable value** nodes:
 | Global | Formula |
 |---|---|
 | `Global.JDJustification` | `With({ j: Trim(Text(ParseJSON(Topic.DraftOut.text).justification)) }, If(IsBlank(j), Global.JDJustification, j))` |
-| `Global.JDReasons` | `With({ r: Concat(Table(ParseJSON(Topic.DraftOut.text).reasons), Text(ThisRecord.Value), ",") }, If(IsBlank(r), Global.JDReasons, r))` |
+| `Global.JDReasons` | `With({ r: Concat(Table(ParseJSON(Topic.DraftOut.text).reasons), Text(ThisRecord.Value.reason), ",") }, If(IsBlank(r), Global.JDReasons, r))` |
 | `Global.JDFlsaRequest` | `With({ x: ParseJSON(Topic.DraftOut.text).flsa }, If(Boolean(x.review_requested), If(IsBlank(Trim(Text(x.concern))), "Requested (no concern stated)", Trim(Text(x.concern))), Global.JDFlsaRequest))` |
 
 ### 5.10 Log hard stops
@@ -772,7 +772,7 @@ If(
   IsBlank(Global.JDDraft),
   "",
   With(
-    { t: "|" & Concat(Table(ParseJSON(Global.JDDraft).touched), Text(ThisRecord.Value), "|") & "|" },
+    { t: "|" & Concat(Table(ParseJSON(Global.JDDraft).touched), Text(ThisRecord.Value.section), "|") & "|" },
     Concat(
       Filter(Table(ParseJSON(Global.JDDraft).changes), ("|" & Text(ThisRecord.Value.section) & "|") in t),
       With(
@@ -836,7 +836,7 @@ With(
     ) &
     If(
       CountRows(Table(d.message.notes)) > 0,
-      Char(10) & Char(10) & Concat(Table(d.message.notes), "- " & Text(ThisRecord.Value), Char(10)),
+      Char(10) & Char(10) & Concat(Table(d.message.notes), "- " & Text(ThisRecord.Value.note), Char(10)),
       ""
     ) &
     Char(10) & Char(10) & Text(d.message.ask)
