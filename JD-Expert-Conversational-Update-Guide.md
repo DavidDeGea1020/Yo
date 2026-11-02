@@ -38,7 +38,7 @@ Your lookup stays as it is.
 - [Part 4 — Reset JD Update topic (creates the globals)](#part-4--reset-jd-update-topic-creates-the-globals)
 - [Part 5 — Draft JD Update topic](#part-5--draft-jd-update-topic)
 - [Part 6 — Switch over begins](#part-6--switch-over-begins)
-- [Part 7 — Edit Show JD Section](#part-7--edit-show-jd-section)
+- [Part 7 — Edit Show JD Section → Show JD Draft](#part-7--edit-show-jd-section--show-jd-draft)
 - [Part 8 — Edit Start JD Update](#part-8--edit-start-jd-update)
 - [Part 9 — Edit Cancel or Switch → Discard JD Update](#part-9--edit-cancel-or-switch--discard-jd-update)
 - [Part 10 — Instructions, descriptions, lookup check](#part-10--instructions-descriptions-lookup-check)
@@ -97,7 +97,7 @@ MANAGER ──► ORCHESTRATOR
                                │  tidy copy + numbered context
                                └► Draft JD Update (new) ─► JD Drafter (new prompt)
                                                            (the four checks + draft + message)
-                           Show JD Section (sections · All · Draft)
+                           Show JD Draft (edited Show JD Section)
                            Discard JD Update (edited Cancel or Switch)
                            Reset JD Update (new, internal)
 ```
@@ -112,8 +112,8 @@ MANAGER ──► ORCHESTRATOR
 | Topic | Now |
 |---|---|
 | Your job lookup | Unchanged |
-| Start JD Update | **Edited in place.** It still gets the job the way it does today. The cards, the acknowledgment and the v1 globals go. It now shows the JD, then hands off to drafting |
-| Show JD Section | **Edited in place.** Reads the new globals; shows one section, the whole JD ("All"), or the draft so far |
+| Start JD Update | **Edited in place.** It still gets the job the way it does today. The cards, the acknowledgment and the v1 globals go. Your lookup still shows the JD; Start then hands off to drafting or asks what's changing |
+| Show JD Section | **Edited in place** and renamed **Show JD Draft.** It shows the draft so far, which the orchestrator can't see. Section and whole-JD requests stay with the orchestrator |
 | Cancel or Switch JD Update | **Edited in place** and renamed **Discard JD Update** |
 | Save Section Change, Preview Section Change, Log Hard Stop, Request Title Review | **Off.** Draft JD Update replaces all four. Delete them after testing |
 | Review and Submit JD Update | **Off for now.** It reads the v1 globals, which no longer get filled. The next guide rebuilds submission |
@@ -863,119 +863,74 @@ With(
 
 ---
 
-## Part 7 — Edit Show JD Section
+## Part 7 — Edit Show JD Section → Show JD Draft
 
-Show JD Section now reads the new globals. It shows one section, the whole current JD ("All"), or the draft so far ("Draft"). It's for mid-update requests ("show me the current duties"); the JD at the start is still shown by your lookup.
+**Why:** your orchestrator already answers "show me the duties" and "show me the whole JD" well, from the job details your lookup returns. It can't show the **draft**, though: Draft JD Update has no outputs, so the orchestrator never sees the proposed changes. This topic now does only that one thing, exactly, from the globals.
 
-### 7.1 Description, input and output
-1. Open **Show JD Section** → **Details**.
+### 7.1 Rename and describe
+1. Open **Show JD Section** → **Details** → **Name:** `Show JD Draft`.
 2. **Trigger** → **Description:** from 10.2.
-3. **SectionName** input → update its **Description** from 10.2. Keep its other settings.
-4. **SectionShown** output → update its **Description** from 10.2.
 
-### 7.2 Delete the old body
-Delete every node below the trigger, from the bottom up (**…** → **Delete**). Keep the input and the output. **Save.**
+### 7.2 Delete the old body, then the input
+1. Delete every node below the trigger, from the bottom up (**…** → **Delete**).
+2. **Details** → **Inputs** → delete **SectionName**: select it, then click the trash icon.
+3. **Outputs:** delete **SectionShown** as well. The topic shows the draft itself, and with no output the orchestrator has nothing to restate.
+4. **Save.**
+
+> If Copilot Studio won't delete the input or output because another topic still references them, delete them after Part 6 has turned the old topics off. Or leave the output in place, with the description `Already shown; don't repeat.`
 
 ### 7.3 Guard: no job loaded
-1. **+** → **Add a condition** → `IsBlank(Global.JDJobCode)`.
+1. **+** → **Add a condition** → **…** → **Change to formula** → `IsBlank(Global.JDJobCode)`.
 2. In its branch:
-   - **Send a message:** `There's no job loaded for an update right now. Which job would you like to look at?`
+   - **Send a message:** `There's no update in progress right now. Which job would you like to update?`
    - **End current topic**.
 
-### 7.4 Work out which part to show
-**Set a variable value** → **Create new** → `Topic.Section` →
+### 7.4 Build the draft view
+Below the 7.3 block: **+** → **Variable management** → **Set a variable value** → **Create new** → `Topic.DraftView` → **Formula**:
 ```powerfx
-With(
-  { k: Lower(Substitute(Topic.SectionName, " ", "")) },
+If(
+  IsBlank(Global.JDDraft),
+  "There are no changes in your draft yet. What's changing about the job?",
+  "Here's everything in your draft for **" & Global.JDJobTitle & "** so far:" & Char(10) & Char(10) &
+  Global.JDChangesFull &
   If(
-    "draft" in k || "change" in k, "Draft",
-    "purpose" in k, "Purpose",
-    "dut" in k, "Principal Duties",
-    "edu" in k, "Education",
-    "exp" in k, "Work Experience",
-    "cert" in k || "licen" in k, "Certifications/Licenses",
-    "ksa" in k || "knowledge" in k || "skill" in k, "KSAs",
-    "all" in k || "whole" in k || "full" in k || "job" in k || "jd" in k, "All",
+    Boolean(ParseJSON(Global.JDDraft).title.requested),
+    Char(10) & Char(10) & "**Title review:** proposed title " & Text(ParseJSON(Global.JDDraft).title.proposed),
     ""
-  )
+  ) &
+  If(IsBlank(Global.JDJustification), "", Char(10) & Char(10) & "**Business justification:** " & Global.JDJustification) &
+  If(IsBlank(Global.JDFlsaRequest), "", Char(10) & Char(10) & "**FLSA review requested:** " & Global.JDFlsaRequest) &
+  Char(10) & Char(10) & "Want to change anything else, or is it ready to submit?"
 )
 ```
-
-### 7.5 Guard: unknown section
-1. **+** → **Add a condition** → `Topic.Section = ""`.
-2. In its branch:
-   - **Send a message:** `Which part would you like to see? Purpose, Principal Duties, Education, Work Experience, Certifications/Licenses, KSAs, the whole job description, or your changes so far.`
-   - **End current topic**.
-
-### 7.6 Draft view
-1. **+** → **Add a condition** → `Topic.Section = "Draft"`.
-2. In its branch:
-   1. **Set a variable value** → `Topic.SectionShown` →
-      ```powerfx
-      If(
-        IsBlank(Global.JDDraft),
-        "There are no changes in your draft yet. What's changing about the job?",
-        "Here's everything in your draft for **" & Global.JDJobTitle & "** so far:" & Char(10) & Char(10) &
-        Global.JDChangesFull &
-        If(
-          Boolean(ParseJSON(Global.JDDraft).title.requested),
-          Char(10) & Char(10) & "**Title review**: proposed title " & Text(ParseJSON(Global.JDDraft).title.proposed),
-          ""
-        ) &
-        If(IsBlank(Global.JDJustification), "", Char(10) & Char(10) & "**Business justification:** " & Global.JDJustification)
-      )
-      ```
-   2. **Send a message** → **{x}** `Topic.SectionShown`.
-   3. **End current topic**.
-
-### 7.7 Section or whole-JD view
-Below the 7.6 block:
-1. **Set a variable value** → `Topic.SectionShown` →
+One-line version, if the formula box complains about the paste:
 ```powerfx
-With(
-  {
-    secs: Table(
-      { n: "Purpose", t: Global.JDOrigPurpose, p: Global.JDPropPurpose },
-      { n: "Principal Duties", t: Global.JDOrigDuties, p: Global.JDPropDuties },
-      { n: "Education", t: Global.JDOrigEducation, p: Global.JDPropEducation },
-      { n: "Work Experience", t: Global.JDOrigExperience, p: Global.JDPropExperience },
-      { n: "Certifications/Licenses", t: Global.JDOrigCerts, p: Global.JDPropCerts },
-      { n: "KSAs", t: Global.JDOrigKSAs, p: Global.JDPropKSAs }
-    )
-  },
-  If(
-    Topic.Section = "All",
-    "Here's the current job description for **" & Global.JDJobTitle & "**:",
-    "Here's the current **" & Topic.Section & "** for **" & Global.JDJobTitle & "**:"
-  ) & Char(10) & Char(10) &
-  Concat(
-    Filter(secs, (Topic.Section = "All" && Not(IsBlank(t))) || n = Topic.Section),
-    With(
-      { L: Split(t, "<br>") },
-      If(Topic.Section = "All", "**" & n & "**" & Char(10) & Char(10), "") &
-      If(
-        IsBlank(t),
-        "_This section is empty._",
-        If(
-          StartsWith(First(L).Value, "•"),
-          Concat(L, If(StartsWith(ThisRecord.Value, "•"), "- " & Trim(Mid(ThisRecord.Value, 2)), ThisRecord.Value), Char(10)),
-          Concat(L, ThisRecord.Value, Char(10) & Char(10))
-        )
-      ) &
-      If(IsBlank(p), "", Char(10) & Char(10) & "_Your draft changes this section._")
-    ),
-    Char(10) & Char(10)
-  )
-)
+If(IsBlank(Global.JDDraft), "There are no changes in your draft yet. What's changing about the job?", "Here's everything in your draft for **" & Global.JDJobTitle & "** so far:" & Char(10) & Char(10) & Global.JDChangesFull & If(Boolean(ParseJSON(Global.JDDraft).title.requested), Char(10) & Char(10) & "**Title review:** proposed title " & Text(ParseJSON(Global.JDDraft).title.proposed), "") & If(IsBlank(Global.JDJustification), "", Char(10) & Char(10) & "**Business justification:** " & Global.JDJustification) & If(IsBlank(Global.JDFlsaRequest), "", Char(10) & Char(10) & "**FLSA review requested:** " & Global.JDFlsaRequest) & Char(10) & Char(10) & "Want to change anything else, or is it ready to submit?")
 ```
-2. **Send a message** → **{x}** `Topic.SectionShown`.
+
+### 7.5 Show it
+**+** → **Send a message** → **{x}** → `Topic.DraftView`.
 
 **Save.**
 
-What this view does:
-- The whole-JD view skips blank sections.
-- Bulleted lines show as `- ` list items (no code blocks).
-- It shows the current official text, never the full updated JD.
+### 7.6 What it looks like
+> **Manager:** What have I changed so far?
+>
+> **Agent:** Here's everything in your draft for **Universal Banker I** so far:
+>
+> **Principal Duties**: Adds opening small business deposit accounts.
+>
+> - Add: Opens small business deposit accounts, gathering required business documentation, and refers complex business needs to the business banking team.
+>
+> **KSAs**: Adds small business product knowledge.
+>
+> - Add: Knowledge of small business deposit products and documentation requirements.
+>
+> **Business justification:** Rolling out small business banking in all branches.
+>
+> Want to change anything else, or is it ready to submit?
+
+Section and whole-JD requests ("show me the current duties", "show me the whole JD") are left to the orchestrator, which answers from your lookup's job details as it does today.
 
 ✅ **Part 7 done when:** the topic saves without errors.
 
@@ -1229,9 +1184,7 @@ If the output is a record or table rather than text, wrap it: `JSON([[L3: …]])
 | Start → ChangeRequest | What the user has already said is changing about this job, in their own words (for example "they will start opening small business accounts"). Leave blank if they haven't described a change. Never ask for it. |
 | **Draft JD Update**: trigger | Checks and drafts the changes for the job description being updated, and shows them. Use every time the user describes a change to the job, asks to revise the draft (reword, shorten, add, remove, undo), proposes a title, gives the business reason, asks for an FLSA review or to change pay type or overtime status, or answers a question about the update. It shows its own results; don't repeat them. Not for plain acknowledgments like "ok" or "thanks". |
 | Draft → UpdateRequest | What the user wants changed, in their own words. Include details from earlier messages that belong to this request. For a revision, the revision they asked for. For an answer, the question and their answer. |
-| **Show JD Section**: trigger | Shows the current, official text of the job being updated (one section or the whole job description), or everything in the draft so far. Use when the user asks to see a section, the whole current JD, or their changes ("what have I changed?"). It displays the text itself; don't repeat it. To look at a different job, use the job lookup instead. |
-| Show JD Section → SectionName | Which part to show: Purpose, Principal Duties, Education, Work Experience, Certifications/Licenses, KSAs, All (the whole current job description), or Draft (all changes so far). |
-| Show JD Section → output SectionShown | Already shown to the user. Don't repeat or summarize it. |
+| **Show JD Draft**: trigger | Shows everything in the job description update draft so far: section changes, title request, business justification and FLSA review request. Use when the user asks what they've changed, wants to see or review their draft, or wants a recap. It displays the draft itself; don't repeat it. Not for showing the current JD or a section of it. |
 | **Discard JD Update**: trigger | Throws away the job description changes in progress. Use only when the user clearly wants to cancel or scrap the update ("cancel this update", "scrap these changes", "never mind the update"). Not when the user is simply finished talking ("that's it", "thanks", "nope"). |
 
 ### 10.3 Agent instructions
@@ -1247,7 +1200,7 @@ UPDATING A JD
 1. Show the job's current JD from the lookup result as you do today (original wording, no restricted fields) and confirm it's the right job. After the user confirms, call Start JD Update. If the user already said what's changing, pass it as ChangeRequest. Start JD Update either drafts right away or asks what's changing. Add nothing after it.
 2. Never ask which sections to change; working that out is your job.
 3. Call Draft JD Update every time the user describes a change, asks to revise the draft (reword, shorten, add, remove, undo), proposes a title, gives the business reason, asks for an FLSA review, or answers a question about the update. It checks the request (indirect fields, scope and level, fit with the title and JD, which sections) and shows its own results; don't repeat or summarize them.
-4. To show a section, the whole current JD, or the draft so far, call Show JD Section. Don't repeat what it shows.
+4. "What have I changed?" or "show my draft": call Show JD Draft; don't repeat what it shows. Show the current JD or a section yourself from the job's details, in its original wording, without summarizing.
 5. Side questions are welcome at any time (other jobs, levels, what a section means); they don't affect the update. Afterwards, offer one short line to pick the update back up.
 6. To cancel or scrap: Discard JD Update. One job per update: to switch jobs, find and confirm the new job, then call Start JD Update; it confirms before discarding.
 
@@ -1309,8 +1262,8 @@ Start a new test session for each group. Watch the **activity map**, and check t
 | T15 | Make that duty mention they refer complex needs to business banking | Only Principal Duties shown, plus the "Also in your draft" line |
 | T16 | Drop the KSA change | KSAs leave the draft |
 | T17 | We're rolling out small business banking in all branches | `JDJustification` set; the reason isn't asked again |
-| T18 | Show me the current duties | Show JD Section: the current text, plus "_Your draft changes this section._" |
-| T19 | What have I changed so far? | Show JD Section (Draft) |
+| T18 | Show me the current duties | The orchestrator shows the current duties in their original wording (no topic) |
+| T19 | What have I changed so far? | Show JD Draft: Add/Remove lines for every changed section, plus the justification |
 | T20 | What's a Lead vs a Supervisor? *(mid-update)* | Answered; the draft is untouched |
 | T21 | Let's do the Teller job instead | Switch confirmation; **No** keeps the draft |
 | T22 | *(job with no Certifications)* They'll need a notary commission within 6 months of hire | A Certifications Add line with a bullet; no blank "Remove:" line |
@@ -1341,7 +1294,8 @@ Start a new test session for each group. Watch the **activity map**, and check t
 | Start says "We're already working on X" for a different job | The lookup didn't update JOBCODE before Start ran |
 | JDContext shows one long line per section | Get JD Details returns a separator the tidy copy doesn't recognize. Check a raw value in Variables |
 | `Sequence`, `ForAll`, `Distinct`, `Mid` or `Last(FirstN())` not recognized | Rare. Bring the exact error text back and the formula will be reworked |
-| Show JD Section says "Which part…?" for a valid section | Check what SectionName received (activity map) and add that word to 7.4 |
+| "What have I changed?" answered by the orchestrator instead of Show JD Draft | The Show JD Draft description (10.2) and instructions step 4 |
+| The orchestrator summarizes the duties instead of showing them | Instructions step 4 ("in its original wording, without summarizing") |
 | Start's question appears above the JD | The orchestrator called Start in the same turn it showed the JD. Instructions step 1: confirm the job first |
 | After confirming, the draft ignores the change described earlier | ChangeRequest wasn't filled. Check its description (10.2); the orchestrator must pass the earlier message |
 | The drafter is slow or times out | Check the size of `JDRelatedLevels`; lower `Right(…, 3000)` to 2000; try a faster model |
