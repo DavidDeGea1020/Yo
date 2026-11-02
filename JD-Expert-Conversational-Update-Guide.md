@@ -140,15 +140,15 @@ About **8–11 hours**:
 
 **L1. How Start JD Update gets the job**
 1. Open **Start JD Update** and find its **Get JD Details** node.
-2. Note what's mapped to its **Job Code** input (e.g. `Global.JobCode`). This guide calls it `[[L1: JOBCODE]]`.
+2. Note what's mapped to its **Job Code** input. **Yours: `Topic.JobCode`** (used throughout Part 8).
 3. Note the nodes above it that produce that value. They stay.
 
 **L2. Get JD Details outputs**
-1. On that node, note the output variable for each field in the table in 8.4.
+1. On that node, note the output variable for each field. **Yours (all Topic variables):** `found`, `jdjson`, `jobtitle`, `purpose`, `principalduties`, `educationrequirements`, `workexperiencerequirements`, `ksas`, `certificationslicenses`, `peoplemanagement`, `salesdesignation`, `relationshipmanager`, `nmlsrequired`. Salary/Hourly and Grade have no separate outputs; they come from `Topic.jdjson` (8.8).
 2. In a test (**Variables**), check that Principal Duties is raw: `• text<br>• text`. If you see `- ` instead of `•`, stop and tell me.
 
 **L3. Related Levels**
-1. In Start JD Update, find the Related Levels node and note its output variable.
+1. In Start JD Update, find the Related Levels node and note its output variable. **Yours:** inputs `JobCode`, `JobTitle`; outputs `Topic.RelatedJson`, `Topic.RelatedCount`.
 2. Open the flow: does it return Grade, Salary/Hourly or Status? If so, do Part 2.
 
 **L4. Bullets**
@@ -952,7 +952,7 @@ Start JD Update keeps the way it gets the job (L1) and keeps calling Get JD Deta
 
 ### 8.2 Delete the v1 nodes
 **Keep:**
-- the nodes that produce JOBCODE (L1);
+- the nodes that produce `Topic.JobCode`;
 - **Get JD Details**;
 - **Related Levels**.
 
@@ -969,31 +969,34 @@ Start JD Update keeps the way it gets the job (L1) and keeps calling Get JD Deta
 > **Every new node from 8.3 on goes at the bottom, below the last node you kept.** Add each new condition below the previous condition block, using the **+** where its branches rejoin. Don't nest the conditions.
 
 ### 8.3 Guard: no job
-1. **+** → **Add a condition** → `IsBlank(Trim(Text([[L1: JOBCODE]])))`.
+1. **+** → **Add a condition** → `IsBlank(Trim(Text(Topic.JobCode)))`.
 2. In its branch:
    - **Send a message:** `Which job description would you like to update?`
    - **End current topic**.
 
-### 8.4 Get JD Details outputs (from L2)
+### 8.4 Your Get JD Details and Related Levels outputs
+These are the variables the rest of Part 8 uses. They're all **Topic** variables, set by the two nodes you kept.
 
-| Field | Output variable |
+| Field | Variable |
 |---|---|
-| Job Title | `[[L2: Title]]` |
-| Purpose | `[[L2: Purpose]]` |
-| Principal Duties | `[[L2: Duties]]` |
-| Education | `[[L2: Education]]` |
-| Work Experience | `[[L2: Experience]]` |
-| Certifications/Licenses | `[[L2: Certs]]` |
-| KSAs | `[[L2: KSAs]]` |
-| People Management | `[[L2: PM]]` |
-| Sales/Non-Sales | `[[L2: Sales]]` |
-| Relationship Manager | `[[L2: RM]]` |
-| NMLS Required | `[[L2: NMLS]]` |
-| Salary/Hourly | `[[L2: SalaryType]]` |
-| Grade | `[[L2: Grade]]` |
+| Job Code (input) | `Topic.JobCode` |
+| Found | `Topic.found` |
+| Job Title | `Topic.jobtitle` |
+| Purpose | `Topic.purpose` |
+| Principal Duties | `Topic.principalduties` |
+| Education | `Topic.educationrequirements` |
+| Work Experience | `Topic.workexperiencerequirements` |
+| Certifications/Licenses | `Topic.certificationslicenses` |
+| KSAs | `Topic.ksas` |
+| People Management | `Topic.peoplemanagement` |
+| Sales/Non-Sales | `Topic.salesdesignation` |
+| Relationship Manager | `Topic.relationshipmanager` |
+| NMLS Required | `Topic.nmlsrequired` |
+| Salary/Hourly, Grade | Inside `Topic.jdjson` (8.8) |
+| Related levels | `Topic.RelatedJson`, `Topic.RelatedCount` |
 
 ### 8.5 Guard: same job already loaded
-1. Below 8.3: **+** → **Add a condition** → `Trim(Text([[L1: JOBCODE]])) = Global.JDJobCode`.
+1. Below 8.3: **+** → **Add a condition** → `Trim(Text(Topic.JobCode)) = Global.JDJobCode`.
 2. In its branch: **+** → **Add a condition** → `Not(IsBlank(Trim(Topic.ChangeRequest)))`.
    - In that condition's first branch: **Go to another topic** → **Draft JD Update** → **UpdateRequest** = `Topic.ChangeRequest`.
    - In its **All other conditions** branch: **Send a message:** `We're already working on ` → **{x}** `Global.JDJobTitle` → `. What would you like to change?`
@@ -1012,7 +1015,7 @@ Start JD Update keeps the way it gets the job (L1) and keeps calling Get JD Deta
 
 ### 8.7 Reset, then the not-found guard
 1. **+** → **Go to another topic** → **Reset JD Update**.
-2. **+** → **Add a condition** → `IsBlank([[L2: Title]])`. In its branch:
+2. **+** → **Add a condition** → `Lower(Text(Topic.found)) in ["false", "no", ""]`. This works whether `found` is true/false or text. In its branch:
    - **Send a message:** `I couldn't find that job. Which one did you mean?`
    - **End current topic**.
 
@@ -1020,12 +1023,19 @@ Start JD Update keeps the way it gets the job (L1) and keeps calling Get JD Deta
 
 | Global | Formula |
 |---|---|
-| `Global.JDJobCode` | `Trim(Text([[L1: JOBCODE]]))` |
-| `Global.JDJobTitle` | `Text([[L2: Title]])` |
-| `Global.JDHRContext` | `"Salary Type: " & Text([[L2: SalaryType]]) & "; Grade: " & Text([[L2: Grade]])` |
+| `Global.JDJobCode` | `Trim(Text(Topic.JobCode))` |
+| `Global.JDJobTitle` | `Text(Topic.jobtitle)` |
+| `Global.JDHRContext` | `"Salary Type: " & Text(ParseJSON(Topic.jdjson).[[SalaryKey]]) & "; Grade: " & Text(ParseJSON(Topic.jdjson).[[GradeKey]])` |
+
+**Finding `[[SalaryKey]]` and `[[GradeKey]]`:**
+1. Run a test, open **Variables**, and look at `Topic.jdjson`.
+2. Copy the exact key names for Salary/Hourly and Grade (for example `SalaryHourly`, `Grade`).
+3. If a key has spaces or a slash, put it in single quotes, e.g. `ParseJSON(Topic.jdjson).'Salary/Hourly'`.
+
+> `JDHRContext` is only used at submission. If this slows you down, set it to `""` for now and fill it in with the submission guide.
 
 ### 8.9 Store the tidy copy of each section
-Add six **Set a variable value** nodes from this template, replacing `SRC` with the output from 8.4:
+Add six **Set a variable value** nodes from this template, replacing `SRC` with the variable in the table below:
 ```powerfx
 Concat(
   Filter(
@@ -1052,12 +1062,18 @@ Concat(
 
 | Set this global | SRC |
 |---|---|
-| `Global.JDOrigPurpose` | `[[L2: Purpose]]` |
-| `Global.JDOrigDuties` | `[[L2: Duties]]` |
-| `Global.JDOrigEducation` | `[[L2: Education]]` |
-| `Global.JDOrigExperience` | `[[L2: Experience]]` |
-| `Global.JDOrigCerts` | `[[L2: Certs]]` |
-| `Global.JDOrigKSAs` | `[[L2: KSAs]]` |
+| `Global.JDOrigPurpose` | `Topic.purpose` |
+| `Global.JDOrigDuties` | `Topic.principalduties` |
+| `Global.JDOrigEducation` | `Topic.educationrequirements` |
+| `Global.JDOrigExperience` | `Topic.workexperiencerequirements` |
+| `Global.JDOrigCerts` | `Topic.certificationslicenses` |
+| `Global.JDOrigKSAs` | `Topic.ksas` |
+
+The Duties version, as one line, ready to paste:
+```powerfx
+Concat(Filter(ForAll(Split(Substitute(Substitute(Substitute(Substitute(Substitute(Coalesce(Topic.principalduties, ""), Char(13), ""), Char(10), "<br>"), "<br />", "<br>"), "<br/>", "<br>"), "<BR>", "<br>"), "<br>"), With({ t: Trim(Substitute(Substitute(ThisRecord.Value, Char(160), " "), Char(9), " ")) }, If(StartsWith(t, "•"), If(IsBlank(Trim(Mid(t, 2))), "", "• " & Trim(Mid(t, 2))), t))), Not(IsBlank(ThisRecord.Value))), ThisRecord.Value, "<br>")
+```
+For the other five, swap `Topic.principalduties` for the variable in the table.
 
 In plain words, for each section the formula:
 1. splits it into lines at `<br>` or line breaks;
@@ -1070,10 +1086,10 @@ Only this in-memory copy changes; the JD list stays exactly as it is.
 ### 8.10 Indirect fields summary
 **Set a variable value** → **Create new** → `Topic.IndirectSummary` →
 ```powerfx
-"People Management: " & Text([[L2: PM]]) &
-"; Sales/Non-Sales: " & Text([[L2: Sales]]) &
-"; Relationship Manager: " & Text([[L2: RM]]) &
-"; NMLS Required: " & Text([[L2: NMLS]])
+"People Management: " & Text(Topic.peoplemanagement) &
+"; Sales/Non-Sales: " & Text(Topic.salesdesignation) &
+"; Relationship Manager: " & Text(Topic.relationshipmanager) &
+"; NMLS Required: " & Text(Topic.nmlsrequired)
 ```
 
 ### 8.11 Numbered job context
@@ -1108,9 +1124,11 @@ With(
 ### 8.12 Related levels
 **Set a variable value** → `Global.JDRelatedLevels` →
 ```powerfx
-If(IsBlank([[L3: Related Levels output]]), "(none)", [[L3: Related Levels output]])
+If(IsBlank(Topic.RelatedJson) || Value(Topic.RelatedCount) = 0, "(none)", Topic.RelatedJson)
 ```
-If the output is a record or table rather than text, wrap it: `JSON([[L3: …]])`.
+If `Topic.RelatedJson` is a record or table rather than text (the formula box will flag it), use `JSON(Topic.RelatedJson)` in place of the last `Topic.RelatedJson`.
+
+> Look inside `Topic.RelatedJson` once in **Variables**. If it includes Grade, Salary/Hourly or Status for the other levels, do Part 2. This JSON goes to the drafter, which writes what the manager reads.
 
 ### 8.13 Hand off to drafting, or ask what's changing
 1. **+** → **Add a condition** → `Not(IsBlank(Trim(Topic.ChangeRequest)))`.
@@ -1290,9 +1308,11 @@ Start a new test session for each group. Watch the **activity map**, and check t
 | Problem | Cause / fix |
 |---|---|
 | `ParseJSON` errors | The prompt's Output isn't set to JSON (3.4), a key is missing (re-apply the example), or the text property isn't `.text` (L5) |
-| Start asks "Which job…?" after the job was confirmed | 8.3 reads the wrong variable. Check L1 |
-| Start says "We're already working on X" for a different job | The lookup didn't update JOBCODE before Start ran |
-| JDContext shows one long line per section | Get JD Details returns a separator the tidy copy doesn't recognize. Check a raw value in Variables |
+| Start asks "Which job…?" after the job was confirmed | `Topic.JobCode` is blank when Start runs. Check the node above Get JD Details that fills it |
+| Start says "We're already working on X" for a different job | `Topic.JobCode` still holds the previous job's code. Check what fills it |
+| JDContext shows one long line per section | `Topic.principalduties` uses a separator the tidy copy doesn't recognize. Check its raw value in Variables |
+| "Not found" for a valid job | Check what `Topic.found` holds in Variables; adjust the 8.7 condition to match |
+| `ParseJSON(Topic.jdjson)` error in 8.8 | The key name is wrong, or needs single quotes. Copy it exactly from Variables, or set `JDHRContext` to `""` for now |
 | `Sequence`, `ForAll`, `Distinct`, `Mid` or `Last(FirstN())` not recognized | Rare. Bring the exact error text back and the formula will be reworked |
 | "What have I changed?" answered by the orchestrator instead of Show JD Draft | The Show JD Draft description (10.2) and instructions step 4 |
 | The orchestrator summarizes the duties instead of showing them | Instructions step 4 ("in its original wording, without summarizing") |
