@@ -1,0 +1,1 @@
+"ORIG: " & Global.JDOrigPurpose & Char(10) & Char(10) & "PLAN: " & Concat(Filter(Table(ParseJSON(Global.JDDraft).changes), Text(ThisRecord.Value.section) = "Purpose"), Concat(Table(ThisRecord.Value.lines), "[keep " & Text(ThisRecord.Value.keep) & "] " & Text(ThisRecord.Value.new), " || "))
