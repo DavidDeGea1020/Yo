@@ -1,0 +1,1 @@
+If(Topic.Status = "ready" && Not(Topic.PlanOK), "Ask them to say the change again, maybe a little differently.", Text(ParseJSON(Topic.DraftOut.text).message.ask))
