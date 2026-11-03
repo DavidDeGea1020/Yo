@@ -738,38 +738,38 @@ If(
   IsBlank(Global.JDDraft),
   "",
   Concat(
-    Table(ParseJSON(Global.JDDraft).changes),
+    Table(ParseJSON(Global.JDDraft).changes) As c,
     With(
-      { cv: ThisRecord.Value },
+      {
+        sec: Text(c.Value.section),
+        orig: Split(Switch(Text(c.Value.section), "Purpose", Global.JDOrigPurpose, "Principal Duties", Global.JDOrigDuties, "Education", Global.JDOrigEducation, "Work Experience", Global.JDOrigExperience, "Certifications/Licenses", Global.JDOrigCerts, "KSAs", Global.JDOrigKSAs, ""), "<br>"),
+        keeps: "," & Concat(Table(c.Value.lines), Text(ThisRecord.Value.keep), ",") & ",",
+        adds: Filter(Table(c.Value.lines), Value(ThisRecord.Value.keep) = 0)
+      },
       With(
         {
-          sec: Text(cv.section),
-          orig: Split(
-            Switch(
-              Text(cv.section),
-              "Purpose", Global.JDOrigPurpose,
-              "Principal Duties", Global.JDOrigDuties,
-              "Education", Global.JDOrigEducation,
-              "Work Experience", Global.JDOrigExperience,
-              "Certifications/Licenses", Global.JDOrigCerts,
-              "KSAs", Global.JDOrigKSAs,
-              ""
-            ),
-            "<br>"
-          ),
-          keeps: "," & Concat(Table(cv.lines), Text(ThisRecord.Value.keep), ",") & ","
+          removed: ForAll(
+            Filter(Sequence(CountRows(orig)), Not(("," & ThisRecord.Value & ",") in keeps) && Not(IsBlank(Last(FirstN(orig, ThisRecord.Value)).Value))),
+            With({ x: Trim(Substitute(Last(FirstN(orig, ThisRecord.Value)).Value, "•", "")) }, { txt: x, core: Lower(If(EndsWith(x, "."), Left(x, Len(x) - 1), x)) })
+          )
         },
-        "**" & sec & "**: " & Text(cv.summary) & Char(10) &
+        "**" & sec & "**: " & Text(c.Value.summary) & Char(10) &
         Concat(
-          Filter(Table(cv.lines), Value(ThisRecord.Value.keep) = 0),
-          Char(10) & "- Add: " & Trim(Substitute(Text(ThisRecord.Value.new), "•", ""))
+          adds As a,
+          With(
+            { nw: Trim(Substitute(Text(a.Value.new), "•", "")) },
+            With(
+              { m: LookUp(removed As r, Len(r.core) > 0 && StartsWith(Lower(nw), r.core)) },
+              With(
+                { show: If(IsBlank(m), nw, With({ s: Trim(Mid(nw, Len(m.core) + 1)) }, Trim(If(StartsWith(s, ".") || StartsWith(s, ","), Mid(s, 2), s)))) },
+                If(IsBlank(show), "", Char(10) & "- Add: " & show)
+              )
+            )
+          )
         ) &
         Concat(
-          Filter(
-            Sequence(CountRows(orig)),
-            Not(("," & ThisRecord.Value & ",") in keeps) && Not(IsBlank(Last(FirstN(orig, ThisRecord.Value)).Value))
-          ),
-          Char(10) & "- Remove: " & Trim(Substitute(Last(FirstN(orig, ThisRecord.Value)).Value, "•", ""))
+          Filter(removed As r, CountRows(Filter(adds As a, StartsWith(Lower(Trim(Substitute(Text(a.Value.new), "•", ""))), r.core))) = 0),
+          Char(10) & "- Remove: " & txt
         )
       )
     ),
@@ -777,6 +777,12 @@ If(
   )
 )
 ```
+One-line version (paste this if the formula box rejects the multi-line one):
+```powerfx
+If(IsBlank(Global.JDDraft), "", Concat(Table(ParseJSON(Global.JDDraft).changes) As c, With({ sec: Text(c.Value.section), orig: Split(Switch(Text(c.Value.section), "Purpose", Global.JDOrigPurpose, "Principal Duties", Global.JDOrigDuties, "Education", Global.JDOrigEducation, "Work Experience", Global.JDOrigExperience, "Certifications/Licenses", Global.JDOrigCerts, "KSAs", Global.JDOrigKSAs, ""), "<br>"), keeps: "," & Concat(Table(c.Value.lines), Text(ThisRecord.Value.keep), ",") & ",", adds: Filter(Table(c.Value.lines), Value(ThisRecord.Value.keep) = 0) }, With({ removed: ForAll(Filter(Sequence(CountRows(orig)), Not(("," & ThisRecord.Value & ",") in keeps) && Not(IsBlank(Last(FirstN(orig, ThisRecord.Value)).Value))), With({ x: Trim(Substitute(Last(FirstN(orig, ThisRecord.Value)).Value, "•", "")) }, { txt: x, core: Lower(If(EndsWith(x, "."), Left(x, Len(x) - 1), x)) })) }, "**" & sec & "**: " & Text(c.Value.summary) & Char(10) & Concat(adds As a, With({ nw: Trim(Substitute(Text(a.Value.new), "•", "")) }, With({ m: LookUp(removed As r, Len(r.core) > 0 && StartsWith(Lower(nw), r.core)) }, With({ show: If(IsBlank(m), nw, With({ s: Trim(Mid(nw, Len(m.core) + 1)) }, Trim(If(StartsWith(s, ".") || StartsWith(s, ","), Mid(s, 2), s)))) }, If(IsBlank(show), "", Char(10) & "- Add: " & show))))) & Concat(Filter(removed As r, CountRows(Filter(adds As a, StartsWith(Lower(Trim(Substitute(Text(a.Value.new), "•", ""))), r.core))) = 0), Char(10) & "- Remove: " & txt))), Char(10) & Char(10)))
+```
+
+**How the Add/Remove lines are worked out:** a changed line that **starts with** an original line it replaces (for example, the Purpose with a sentence added at the end, or a duty with a phrase added) shows as **Add: only the added part**, with no Remove. Lines that were really reworded or removed still show as Add and Remove.
 
 **5.11d What to show this turn.** **Set a variable value** → the existing `Topic.ChangesShown` →
 ```powerfx
@@ -786,38 +792,38 @@ If(
   With(
     { t: "|" & Concat(Table(ParseJSON(Global.JDDraft).touched), Text(ThisRecord.Value.section), "|") & "|" },
     Concat(
-      Filter(Table(ParseJSON(Global.JDDraft).changes), ("|" & Text(ThisRecord.Value.section) & "|") in t),
+      Filter(Table(ParseJSON(Global.JDDraft).changes), ("|" & Text(ThisRecord.Value.section) & "|") in t) As c,
       With(
-        { cv: ThisRecord.Value },
+        {
+          sec: Text(c.Value.section),
+          orig: Split(Switch(Text(c.Value.section), "Purpose", Global.JDOrigPurpose, "Principal Duties", Global.JDOrigDuties, "Education", Global.JDOrigEducation, "Work Experience", Global.JDOrigExperience, "Certifications/Licenses", Global.JDOrigCerts, "KSAs", Global.JDOrigKSAs, ""), "<br>"),
+          keeps: "," & Concat(Table(c.Value.lines), Text(ThisRecord.Value.keep), ",") & ",",
+          adds: Filter(Table(c.Value.lines), Value(ThisRecord.Value.keep) = 0)
+        },
         With(
           {
-            sec: Text(cv.section),
-            orig: Split(
-              Switch(
-                Text(cv.section),
-                "Purpose", Global.JDOrigPurpose,
-                "Principal Duties", Global.JDOrigDuties,
-                "Education", Global.JDOrigEducation,
-                "Work Experience", Global.JDOrigExperience,
-                "Certifications/Licenses", Global.JDOrigCerts,
-                "KSAs", Global.JDOrigKSAs,
-                ""
-              ),
-              "<br>"
-            ),
-            keeps: "," & Concat(Table(cv.lines), Text(ThisRecord.Value.keep), ",") & ","
+            removed: ForAll(
+              Filter(Sequence(CountRows(orig)), Not(("," & ThisRecord.Value & ",") in keeps) && Not(IsBlank(Last(FirstN(orig, ThisRecord.Value)).Value))),
+              With({ x: Trim(Substitute(Last(FirstN(orig, ThisRecord.Value)).Value, "•", "")) }, { txt: x, core: Lower(If(EndsWith(x, "."), Left(x, Len(x) - 1), x)) })
+            )
           },
-          "**" & sec & "**: " & Text(cv.summary) & Char(10) &
+          "**" & sec & "**: " & Text(c.Value.summary) & Char(10) &
           Concat(
-            Filter(Table(cv.lines), Value(ThisRecord.Value.keep) = 0),
-            Char(10) & "- Add: " & Trim(Substitute(Text(ThisRecord.Value.new), "•", ""))
+            adds As a,
+            With(
+              { nw: Trim(Substitute(Text(a.Value.new), "•", "")) },
+              With(
+                { m: LookUp(removed As r, Len(r.core) > 0 && StartsWith(Lower(nw), r.core)) },
+                With(
+                  { show: If(IsBlank(m), nw, With({ s: Trim(Mid(nw, Len(m.core) + 1)) }, Trim(If(StartsWith(s, ".") || StartsWith(s, ","), Mid(s, 2), s)))) },
+                  If(IsBlank(show), "", Char(10) & "- Add: " & show)
+                )
+              )
+            )
           ) &
           Concat(
-            Filter(
-              Sequence(CountRows(orig)),
-              Not(("," & ThisRecord.Value & ",") in keeps) && Not(IsBlank(Last(FirstN(orig, ThisRecord.Value)).Value))
-            ),
-            Char(10) & "- Remove: " & Trim(Substitute(Last(FirstN(orig, ThisRecord.Value)).Value, "•", ""))
+            Filter(removed As r, CountRows(Filter(adds As a, StartsWith(Lower(Trim(Substitute(Text(a.Value.new), "•", ""))), r.core))) = 0),
+            Char(10) & "- Remove: " & txt
           )
         )
       ),
@@ -830,6 +836,11 @@ If(
   )
 )
 ```
+One-line version:
+```powerfx
+If(IsBlank(Global.JDDraft), "", With({ t: "|" & Concat(Table(ParseJSON(Global.JDDraft).touched), Text(ThisRecord.Value.section), "|") & "|" }, Concat(Filter(Table(ParseJSON(Global.JDDraft).changes), ("|" & Text(ThisRecord.Value.section) & "|") in t) As c, With({ sec: Text(c.Value.section), orig: Split(Switch(Text(c.Value.section), "Purpose", Global.JDOrigPurpose, "Principal Duties", Global.JDOrigDuties, "Education", Global.JDOrigEducation, "Work Experience", Global.JDOrigExperience, "Certifications/Licenses", Global.JDOrigCerts, "KSAs", Global.JDOrigKSAs, ""), "<br>"), keeps: "," & Concat(Table(c.Value.lines), Text(ThisRecord.Value.keep), ",") & ",", adds: Filter(Table(c.Value.lines), Value(ThisRecord.Value.keep) = 0) }, With({ removed: ForAll(Filter(Sequence(CountRows(orig)), Not(("," & ThisRecord.Value & ",") in keeps) && Not(IsBlank(Last(FirstN(orig, ThisRecord.Value)).Value))), With({ x: Trim(Substitute(Last(FirstN(orig, ThisRecord.Value)).Value, "•", "")) }, { txt: x, core: Lower(If(EndsWith(x, "."), Left(x, Len(x) - 1), x)) })) }, "**" & sec & "**: " & Text(c.Value.summary) & Char(10) & Concat(adds As a, With({ nw: Trim(Substitute(Text(a.Value.new), "•", "")) }, With({ m: LookUp(removed As r, Len(r.core) > 0 && StartsWith(Lower(nw), r.core)) }, With({ show: If(IsBlank(m), nw, With({ s: Trim(Mid(nw, Len(m.core) + 1)) }, Trim(If(StartsWith(s, ".") || StartsWith(s, ","), Mid(s, 2), s)))) }, If(IsBlank(show), "", Char(10) & "- Add: " & show))))) & Concat(Filter(removed As r, CountRows(Filter(adds As a, StartsWith(Lower(Trim(Substitute(Text(a.Value.new), "•", ""))), r.core))) = 0), Char(10) & "- Remove: " & txt))), Char(10) & Char(10)) & With({ others: Concat(Filter(Table(ParseJSON(Global.JDDraft).changes), Not(("|" & Text(ThisRecord.Value.section) & "|") in t)), Text(ThisRecord.Value.section), ", ") }, If(IsBlank(others), "", Char(10) & Char(10) & "_Also in your draft (unchanged this time): " & others & "_"))))
+```
+The manager sees only the sections touched this turn (all of them on a first draft), plus a one-line reminder of the others. The Add/Remove logic is the same as 5.11c.
 
 ### 5.12 Show the draft, then ask the next question (the turn ends on a question)
 **Why a question node, not a message:** when a topic ends on a **message**, the orchestrator gets the turn back and often adds its own follow-up ("That's a helpful question to answer next…"). When the topic ends on a **question**, the turn ends while it waits for the manager's reply, so the orchestrator has nothing to add. The manager's reply then comes straight back into this topic and goes to the drafter again.
