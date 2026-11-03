@@ -144,7 +144,7 @@ About **8–11 hours**:
 3. Note the nodes above it that produce that value. They stay.
 
 **L2. Get JD Details outputs**
-1. On that node, note the output variable for each field. **Yours (all Topic variables):** `found`, `jdjson`, `jobtitle`, `purpose`, `principalduties`, `educationrequirements`, `workexperiencerequirements`, `ksas`, `certificationslicenses`, `peoplemanagement`, `salesdesignation`, `relationshipmanager`, `nmlsrequired`. Salary/Hourly and Grade have no separate outputs; they come from `Topic.jdjson` (8.8).
+1. On that node, note the output variable for each field. **Yours (all Topic variables):** `found`, `jdjson`, `jobtitle`, `purpose`, `principalduties`, `educationrequirements`, `workexperiencerequirements`, `ksas`, `certificationslicenses`, `peoplemanagement`, `salesdesignation`, `relationshipmanager`, `nmlsrequired`. Salary/Hourly and Grade aren't returned at all; the HR email flow reads them on its own.
 2. In a test (**Variables**), check that Principal Duties is raw: `• text<br>• text`. If you see `- ` instead of `•`, stop and tell me.
 
 **L3. Related Levels**
@@ -280,6 +280,7 @@ LATEST REQUEST:
 - Never regenerate a section for a single change: keep every unchanged line exactly (keep). Never ask the manager to rewrite existing content; start from the current language.
 - Flag, don't decide: title, level, grade, FLSA, EEO, job family/stream, compensation, and indirect designations are HR decisions.
 - Never invent facts (systems, products, amounts, licenses, team names) the manager didn't give and the JD doesn't contain. If a good draft needs one, ask.
+- Confirm before you draft: if the request names a role, title, team, system, product, or number that doesn't appear in THE JOB or NEIGHBORING LEVELS, or that you'd have to guess or correct, don't draft it yet. Never substitute the closest match. Ask one question to confirm it (set confirm_first to true and status to "needs_info"), and draft on the next turn using exactly what the manager confirms.
 - Never change or propose changes to a related JD. If the issue is in another level's JD, say HR will see the comparison.
 - Never write out the complete updated JD in your message.
 
@@ -374,11 +375,12 @@ Don't repeat a concern that's already in the CURRENT DRAFT findings unless somet
 
 === STATUS ===
 - "ready": you changed the draft: sections, title, justification, reasons, or FLSA review request (new or revised). Return the complete draft.
-- "needs_info": you can't draft responsibly without one answer. Ask exactly one question.
+- "needs_info": you can't draft responsibly without one answer. Ask exactly one question, and don't change the draft this turn.
 - "no_change": a question, a thank-you, or something already covered. Answer it in the message.
 - "not_feasible": not something a JD update can do (about a person, a restricted field, belongs to a different job). Explain briefly and offer the closest thing you can do.
 - "hard_stop": the whole request is a hard stop.
 For every status except "ready", return the CURRENT DRAFT's changes, indirect, title, and flsa unchanged.
+If your ask is a question whose answer would change what you draft (an unconfirmed role, title, team, system, or number), the status must be "needs_info" and confirm_first must be true. Never draft and ask that kind of question in the same turn.
 
 === MESSAGE (the manager reads this; the changes are displayed separately) ===
 - intro: one natural sentence that leads with the answer (mention the job title on the first draft). No filler.
@@ -400,6 +402,7 @@ Don't list or repeat the changes in the message. The line numbers in THE JOB are
 11. Any role: "add CPA, our current person has one" → incumbent credential: ask whether the position requires it.
 12. Custodian: "add opening business accounts" → role drift: ask how it applies to the role before drafting.
 13. Any role: a request that repeats an existing duty in new words → advise that an existing duty already covers it (quote it); offer to refine that duty instead.
+14. Any role: "add that they cover for the client services lead" when no such title appears in THE JOB → needs_info, confirm_first true: "Which role will they cover for? I want to use its exact title." Draft only after the manager confirms; never swap in a similar title.
 
 === OUTPUT ===
 Return only JSON with every key present (use "", [], or false when empty):
@@ -408,6 +411,7 @@ Return only JSON with every key present (use "", [], or false when empty):
 - scope_verdict: in_scope | level_drift | role_drift | scope_creep | not_job_content.
 - scope_note: one sentence, or "".
 - status: ready | needs_info | no_change | not_feasible | hard_stop.
+- confirm_first: true when you're asking the manager to confirm something before drafting (status is then needs_info); otherwise false.
 - touched: the sections you changed in THIS turn (all changed sections on a first draft), each as {"section": "exact section name"}.
 - changes: every section that differs from THE JOB, as the complete current set. For each: section (exact name); summary (one short line); lines: the complete new section in order. Each item is {"keep": n, "new": ""}, which copies original line n exactly, or {"keep": 0, "new": "text"} for new or reworded text. Leaving out an original line number removes that line. Use each original line number at most once, and only numbers that exist in THE JOB for that section. A section shown as "(empty)" has no lines, so use only keep 0 there. Purpose is usually a single {"keep": 0, "new": "..."}.
 - unchanged: on a first draft or broadened request, the sections you checked and left alone, each with a short reason; otherwise [].
@@ -431,6 +435,7 @@ Return only JSON with every key present (use "", [], or false when empty):
   "scope_verdict": "in_scope",
   "scope_note": "",
   "status": "ready",
+  "confirm_first": false,
   "touched": [ { "section": "Principal Duties" } ],
   "changes": [
     {
@@ -590,8 +595,9 @@ Save the output as `Topic.DraftOut`.
 ### 5.7 Read the status and check the plan
 1. **Set a variable value** → **Create new** → `Topic.Status` →
    ```powerfx
-   Text(ParseJSON(Topic.DraftOut.text).status)
+   If(Boolean(ParseJSON(Topic.DraftOut.text).confirm_first), "needs_info", Text(ParseJSON(Topic.DraftOut.text).status))
    ```
+   If the drafter says it needs a confirmation first, this treats the turn as a question even if the status says "ready". The draft isn't saved or shown, and only the question goes out.
 2. **Set a variable value** → the existing `Topic.PlanOK` →
    ```powerfx
    With(
@@ -992,7 +998,7 @@ These are the variables the rest of Part 8 uses. They're all **Topic** variables
 | Sales/Non-Sales | `Topic.salesdesignation` |
 | Relationship Manager | `Topic.relationshipmanager` |
 | NMLS Required | `Topic.nmlsrequired` |
-| Salary/Hourly, Grade | Inside `Topic.jdjson` (8.8) |
+| Salary/Hourly, Grade | Not returned (restricted fields stay out of the agent) |
 | Related levels | `Topic.RelatedJson`, `Topic.RelatedCount` |
 
 ### 8.5 Guard: same job already loaded
@@ -1025,14 +1031,9 @@ These are the variables the rest of Part 8 uses. They're all **Topic** variables
 |---|---|
 | `Global.JDJobCode` | `Trim(Text(Topic.JobCode))` |
 | `Global.JDJobTitle` | `Text(Topic.jobtitle)` |
-| `Global.JDHRContext` | `"Salary Type: " & Text(ParseJSON(Topic.jdjson).[[SalaryKey]]) & "; Grade: " & Text(ParseJSON(Topic.jdjson).[[GradeKey]])` |
+| `Global.JDHRContext` | **Skip:** leave it `""` (the Reset already sets that) |
 
-**Finding `[[SalaryKey]]` and `[[GradeKey]]`:**
-1. Run a test, open **Variables**, and look at `Topic.jdjson`.
-2. Copy the exact key names for Salary/Hourly and Grade (for example `SalaryHourly`, `Grade`).
-3. If a key has spaces or a slash, put it in single quotes, e.g. `ParseJSON(Topic.jdjson).'Salary/Hourly'`.
-
-> `JDHRContext` is only used at submission. If this slows you down, set it to `""` for now and fill it in with the submission guide.
+Get JD Details doesn't return the restricted fields, so there's nothing to store here. Restricted values never enter the agent, and the HR email's child flow reads them separately. `JDHRContext` stays in Reset JD Update so submission can still pass it to the final check as "(none)".
 
 ### 8.9 Store the tidy copy of each section
 Add six **Set a variable value** nodes from this template, replacing `SRC` with the variable in the table below:
@@ -1312,7 +1313,6 @@ Start a new test session for each group. Watch the **activity map**, and check t
 | Start says "We're already working on X" for a different job | `Topic.JobCode` still holds the previous job's code. Check what fills it |
 | JDContext shows one long line per section | `Topic.principalduties` uses a separator the tidy copy doesn't recognize. Check its raw value in Variables |
 | "Not found" for a valid job | Check what `Topic.found` holds in Variables; adjust the 8.7 condition to match |
-| `ParseJSON(Topic.jdjson)` error in 8.8 | The key name is wrong, or needs single quotes. Copy it exactly from Variables, or set `JDHRContext` to `""` for now |
 | `Sequence`, `ForAll`, `Distinct`, `Mid` or `Last(FirstN())` not recognized | Rare. Bring the exact error text back and the formula will be reworked |
 | "What have I changed?" answered by the orchestrator instead of Show JD Draft | The Show JD Draft description (10.2) and instructions step 4 |
 | The orchestrator summarizes the duties instead of showing them | Instructions step 4 ("in its original wording, without summarizing") |
