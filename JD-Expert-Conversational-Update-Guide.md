@@ -336,7 +336,7 @@ Ask: would someone in this job, at this level, plausibly do this?
 
 === WRITING CONVENTIONS ===
 - Match the existing JD: verb form, tense, bullet structure, terminology (if it says "clients", don't write "customers"). Write new lines without a bullet character; the system adds it.
-- Purpose: 2 to 4 sentences on why the role exists and its primary outcome. Not a task list; not broader than the duties support.
+- Purpose: 2 to 4 sentences on why the role exists and its primary outcome. Not a task list; not broader than the duties support. To add to the Purpose, keep its existing line(s) exactly (keep) and put only the new sentence in a separate {"keep": 0} line; the system joins them into one paragraph. Reword an existing Purpose line only when the manager asks to change that wording or it would contradict the change.
 - Principal Duties: roughly 5 to 10 items in order of importance. Each starts with a present-tense action verb with no subject ("Opens...", "Coordinates..."). One task per item. Don't add authority the role doesn't have. Cut filler ("various", "assists with", "responsible for", "as needed").
 - Education: options are High School Diploma or GED equivalent, Associate's, Bachelor's, Master's, each Required or Preferred. Keep the existing line format and ending exactly. Keep the equivalency statement "An equivalent combination of education and relevant professional experience may be considered in lieu of a degree." unless the manager explicitly removes it.
 - Work Experience: a year range plus an area of experience; keep the existing format and its final Required or Preferred sentence. Approved ranges: [[HR TO CONFIRM: e.g. Minimum 1 Year | 2-4 | 5-7 | 8-10 | 10+]]. Until confirmed, use a range already used in this JD or its NEIGHBORING LEVELS.
@@ -413,7 +413,7 @@ Return only JSON with every key present (use "", [], or false when empty):
 - status: ready | needs_info | no_change | not_feasible | hard_stop.
 - confirm_first: true when you're asking the manager to confirm something before drafting (status is then needs_info); otherwise false.
 - touched: the sections you changed in THIS turn (all changed sections on a first draft), each as {"section": "exact section name"}.
-- changes: every section that differs from THE JOB, as the complete current set. For each: section (exact name); summary (one short line); lines: the complete new section in order. Each item is {"keep": n, "new": ""}, which copies original line n exactly, or {"keep": 0, "new": "text"} for new or reworded text. Leaving out an original line number removes that line. Use each original line number at most once, and only numbers that exist in THE JOB for that section. A section shown as "(empty)" has no lines, so use only keep 0 there. Purpose is usually a single {"keep": 0, "new": "..."}.
+- changes: every section that differs from THE JOB, as the complete current set. For each: section (exact name); summary (one short line); lines: the complete new section in order. Each item is {"keep": n, "new": ""}, which copies original line n exactly, or {"keep": 0, "new": "text"} for new or reworded text. Leaving out an original line number removes that line. Use each original line number at most once, and only numbers that exist in THE JOB for that section. A section shown as "(empty)" has no lines, so use only keep 0 there. Purpose: when adding, keep the existing line(s) and add only the new sentence as its own keep 0 line; never rewrite the whole Purpose just to add to it.
 - unchanged: on a first draft or broadened request, the sections you checked and left alone, each with a short reason; otherwise [].
 - indirect: accumulated; carry forward items that still apply. Each: field, current, evidence, question.
 - findings: this turn's concerns. Each: severity (block | confirm | advise), about, note, suggestion.
@@ -725,6 +725,12 @@ If(
 | `Global.JDPropKSAs` | `Global.JDOrigKSAs` | `KSAs` |
 
 Only Principal Duties is bulleted in your JDs, so only it gets `• ` on new lines (also when the section was empty). New KSA and Certification lines are added as plain lines, matching your data.
+
+**Purpose node only: join with a space instead of `<br>`.** Purpose is one paragraph, so an added sentence must join the existing text instead of starting a new line. In the `Global.JDPropPurpose` node, replace the last argument of `Concat` (the final `"<br>"`) with:
+```powerfx
+If(CountRows(Split(Global.JDOrigPurpose, "<br>")) <= 1, " ", "<br>")
+```
+A one-paragraph Purpose (the usual case) gets a space. A Purpose that already has line breaks keeps them. The redline's Paragraph mode then marks only the added sentence.
 
 **5.11c Readable text of all changes.** **Set a variable value** → `Global.JDChangesFull` →
 ```powerfx
