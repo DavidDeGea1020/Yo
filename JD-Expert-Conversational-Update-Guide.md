@@ -825,31 +825,43 @@ If(
 )
 ```
 
-### 5.12 Send the message
-Below the 5.11 block: **+** → **Send a message** → **{x}** → **Formula**:
+### 5.12 Show the draft, then ask the next question (the turn ends on a question)
+**Why a question node, not a message:** when a topic ends on a **message**, the orchestrator gets the turn back and often adds its own follow-up ("That's a helpful question to answer next…"). When the topic ends on a **question**, the turn ends while it waits for the manager's reply, so the orchestrator has nothing to add. The manager's reply then comes straight back into this topic and goes to the drafter again.
+
+Below the 5.11 block (main line, after its branches rejoin), add these nodes in order:
+
+**1. The body.** **Set a variable value** → **Create new** → `Topic.Body` →
 ```powerfx
-With(
-  { d: ParseJSON(Topic.DraftOut.text) },
-  If(
-    Topic.Status = "ready" && Not(Topic.PlanOK),
-    "I couldn't build that draft cleanly. Could you say the change again, maybe a little differently?",
-    Text(d.message.intro) &
-    If(Topic.Status = "ready" && Not(IsBlank(Topic.ChangesShown)), Char(10) & Char(10) & Topic.ChangesShown, "") &
-    If(
-      Topic.Status = "ready" && CountRows(Table(d.unchanged)) > 0,
-      Char(10) & Char(10) & "No change needed: " & Concat(Table(d.unchanged), Text(ThisRecord.Value.section), ", "),
-      ""
-    ) &
-    If(
-      CountRows(Table(d.message.notes)) > 0,
-      Char(10) & Char(10) & Concat(Table(d.message.notes), "- " & Text(ThisRecord.Value.note), Char(10)),
-      ""
-    ) &
-    Char(10) & Char(10) & Text(d.message.ask)
-  )
-)
+With({d: ParseJSON(Topic.DraftOut.text)}, If(Topic.Status = "ready" && Not(Topic.PlanOK), "I couldn't build that draft cleanly.", Text(d.message.intro) & If(Topic.Status = "ready" && Not(IsBlank(Topic.ChangesShown)), Char(10) & Char(10) & Topic.ChangesShown, "") & If(Topic.Status = "ready" && CountRows(Table(d.unchanged)) > 0, Char(10) & Char(10) & "No change needed: " & Concat(Table(d.unchanged), Text(ThisRecord.Value.section), ", "), "") & If(CountRows(Table(d.message.notes)) > 0, Char(10) & Char(10) & Concat(Table(d.message.notes), "- " & Text(ThisRecord.Value.note), Char(10)), "")))
 ```
+
+**2. The question.** **Set a variable value** → **Create new** → `Topic.Ask` →
+```powerfx
+If(Topic.Status = "ready" && Not(Topic.PlanOK), "Could you say the change again, maybe a little differently?", Text(ParseJSON(Topic.DraftOut.text).message.ask))
+```
+
+**3. Show the body.** **Send a message** → **{x}** → `Topic.Body`.
+
+**4. Ask the question.** **+** → **Ask a question**:
+- **Message** → **{x}** → `Topic.Ask`
+- **Identify:** **User's entire response**
+- **Save user response as:** **Create new** → `Topic.NextMessage`
+- On the node: **…** → **Properties** → **Question behavior**:
+  - **Skip behavior:** **Ask every time** (essential: the loop reuses this node)
+  - **Allow switching to another topic:** **On** (so "show my draft", "scrap this" or a side question still reach the right topic)
+
+**5. Feed the reply back in.** **Set a variable value** → `Topic.UpdateRequest` → `Topic.NextMessage`.
+
+**6. Loop.** **Topic management** → **Go to step** → click the first node of **5.4** (`Topic.Tries` = `0`).
+
 **Save.**
+
+How the loop works:
+- Each reply is logged (5.5), drafted (5.6) and shown again.
+- **Side questions** ("what's a Lead vs a Supervisor?"), "show my draft" and "scrap this" switch to the orchestrator or their topics. When that topic ends, this question comes back with just the short ask (for example "Want to adjust anything, or is it ready to submit?"), which brings the manager back on track. The draft isn't repeated.
+- **Discard** ("Yes, discard") ends with **End all topics**, which also ends this loop.
+
+> If you'd built 5.12 earlier as a Set variable (`Topic.Reply`) plus a message, delete those two nodes. The six nodes above replace them.
 
 ✅ **Part 5 done when:** the topic saves without formula errors.
 
@@ -1134,7 +1146,13 @@ If `Topic.RelatedJson` is a record or table rather than text (the formula box wi
 ### 8.13 Hand off to drafting, or ask what's changing
 1. **+** → **Add a condition** → `Not(IsBlank(Trim(Topic.ChangeRequest)))`.
 2. In its first branch: **Go to another topic** → **Draft JD Update** → **UpdateRequest** = `Topic.ChangeRequest`.
-3. In **All other conditions**: **Send a message:** `What's changing about the job, and what's driving the change? Describe it in your own words and I'll recommend which sections to update and how to word them.`
+3. In **All other conditions**, end on a **question** rather than a message, so the orchestrator doesn't add its own "What would you like to change…" on top (same reason as 5.12):
+   1. **Ask a question**:
+      - **Message:** `What's changing about the job, and what's driving the change? Describe it in your own words and I'll recommend which sections to update and how to word them.`
+      - **Identify:** **User's entire response**
+      - **Save user response as:** **Create new** → `Topic.FirstChange`
+      - **…** → **Properties** → **Question behavior** → **Skip behavior:** **Ask every time**
+   2. **Go to another topic** → **Draft JD Update** → **UpdateRequest** = `Topic.FirstChange`.
 4. Below the condition block: **End current topic**.
 
 **Save.**
@@ -1216,9 +1234,9 @@ FINDING JOBS
 Find and confirm jobs the way you do today: fuzzy matching handles typos and abbreviations ("UB 2"). If several jobs are close, ask which one. Always confirm the job before starting an update. Never ask for a job code.
 
 UPDATING A JD
-1. Show the job's current JD from the lookup result as you do today (original wording, no restricted fields) and confirm it's the right job. After the user confirms, call Start JD Update. If the user already said what's changing, pass it as ChangeRequest. Start JD Update either drafts right away or asks what's changing. Add nothing after it.
+1. Show the job's current JD from the lookup result as you do today (original wording, no restricted fields) and confirm it's the right job. After the user confirms, call Start JD Update. If the user already said what's changing, pass it as ChangeRequest. Start JD Update either drafts right away or asks what's changing. Your turn ends there: never add your own message after Start JD Update or Draft JD Update.
 2. Never ask which sections to change; working that out is your job.
-3. Call Draft JD Update every time the user describes a change, asks to revise the draft (reword, shorten, add, remove, undo), proposes a title, gives the business reason, asks for an FLSA review, or answers a question about the update. It checks the request (indirect fields, scope and level, fit with the title and JD, which sections) and shows its own results; don't repeat or summarize them.
+3. Call Draft JD Update every time the user describes a change, asks to revise the draft (reword, shorten, add, remove, undo), proposes a title, gives the business reason, asks for an FLSA review, or answers a question about the update. It checks the request (indirect fields, scope and level, fit with the title and JD, which sections), shows its own results, asks the next question, and handles the manager's reply itself. Don't repeat, summarize, or comment on what it showed or asked.
 4. "What have I changed?" or "show my draft": call Show JD Draft; don't repeat what it shows. Show the current JD or a section yourself from the job's details, in its original wording, without summarizing.
 5. Side questions are welcome at any time (other jobs, levels, what a section means); they don't affect the update. Afterwards, offer one short line to pick the update back up.
 6. To cancel or scrap: Discard JD Update. One job per update: to switch jobs, find and confirm the new job, then call Start JD Update; it confirms before discarding.
@@ -1297,6 +1315,7 @@ Start a new test session for each group. Watch the **activity map**, and check t
 | Wrong sections | SECTION ROUTING |
 | Weak or off-style wording | WRITING CONVENTIONS |
 | The agent restates the draft | Draft JD Update must have no outputs; instructions step 3 |
+| The orchestrator adds its own follow-up after Start or Draft | The topic must end on a **question** node (5.12, 8.13), not a message |
 | The wrong topic picked | Descriptions (10.2) first, then the instructions |
 | "I couldn't build that draft cleanly" appears often | The drafter's OUTPUT rules on `keep`; check the `JDContext` numbering |
 
