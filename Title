@@ -1,0 +1,1 @@
+equals(toLower(trim(string(triggerBody()?['KEY']))), 'true')
