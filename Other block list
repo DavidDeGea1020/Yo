@@ -1,0 +1,1 @@
+  {"name": "BusinessReason", "keep": "@{if(empty(body('Get_Request')?['BusinessReason']), 'no', 'yes')}"},
