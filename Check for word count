@@ -1,0 +1,1 @@
+CountRows(Filter(Split(Trim(Topic.BusinessReason), " "), !IsBlank(Trim(Value))))
