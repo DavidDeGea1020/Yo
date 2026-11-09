@@ -1,0 +1,7 @@
+{
+  "intro": "Here are a few changes that address HR's feedback before you resubmit.",
+  "fixes": [
+    { "section": "Principal Duties", "fix": "Remove the vendor contract negotiation duty, or reword it as: Supports the Facilities Manager in coordinating vendor contracts." },
+    { "section": "Business Reason", "fix": "Explain that vendor coordination is now an ongoing part of the role since the Operations merger, and how often it happens." }
+  ]
+}
