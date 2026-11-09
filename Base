@@ -1,0 +1,4 @@
+Name	Inputs
+SenderEmail	Expression: toLower(triggerOutputs()?['body/from'])
+AllowedDomain	Plain text: @citynational.com
+RequestIdText	Expression: first(split(trim(last(split(coalesce(triggerOutputs()?['body/subject'], ''), 'JD Request #'))), ' '))
