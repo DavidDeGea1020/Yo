@@ -1,0 +1,1 @@
+if(empty(body('Get_Doc_Metadata')?['Path']), '', concat(outputs('SiteUrl'), replace(encodeUriComponent(body('Get_Doc_Metadata')?['Path']), '%2F', '/'), '?web=1'))
