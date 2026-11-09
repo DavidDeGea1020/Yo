@@ -1,0 +1,16 @@
+{
+  "type": "AdaptiveCard",
+  "$schema": "http://adaptivecards.io/schemas/adaptive-card.json",
+  "version": "1.5",
+  "body": [
+    { "type": "TextBlock", "text": "Before you submit", "weight": "Bolder", "size": "Medium", "wrap": true },
+    { "type": "TextBlock", "text": "By submitting, I confirm that:", "wrap": true },
+    { "type": "TextBlock", "text": "- These changes reflect the current, ongoing duties and requirements of this position.\n- They describe the job, not the performance or qualifications of a specific employee.\n- The information and business reason I provided are accurate and complete to the best of my knowledge.", "wrap": true, "spacing": "Small" },
+    { "type": "TextBlock", "text": "I understand HR will review this request, and nothing changes until HR approves it.", "wrap": true },
+    { "type": "Input.Toggle", "id": "attestCheck", "title": "I confirm the statements above", "valueOn": "yes", "valueOff": "no", "value": "no", "isRequired": true, "errorMessage": "Please confirm to submit." }
+  ],
+  "actions": [
+    { "type": "Action.Submit", "title": "Submit to HR", "style": "positive", "data": { "attestChoice": "submit" } },
+    { "type": "Action.Submit", "title": "Go back", "associatedInputs": "none", "data": { "attestChoice": "back" } }
+  ]
+}
