@@ -1,0 +1,1 @@
+if(empty(body('CS_Items')), '', concat('<ul style="margin:0 0 0 20px;padding:0;">', join(body('CS_Items'), ''), '</ul>'))
