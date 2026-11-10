@@ -1,0 +1,1 @@
+if(or(equals(item()?['keep'], 'yes'), not(contains(variables('Html'), concat('<!--BLOCK:', item()?['name'], '-->')))), variables('Html'), concat(first(split(variables('Html'), concat('<!--BLOCK:', item()?['name'], '-->'))), last(split(variables('Html'), concat('<!--/BLOCK:', item()?['name'], '-->')))))
