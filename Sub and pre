@@ -1,0 +1,3 @@
+concat(if(greater(length(outputs('FlagChips')), 0), '[Flagged] ', ''), 'Compensation Review: JD Update #', body('Get_Request')?['ID'], ' · ', body('Get_Request')?['Title'])
+
+concat('HR approved by ', outputs('HRApprovedBy'), ' · ', body('Get_Request')?['Title'], ' · ', if(greater(length(outputs('FlagChips')), 0), concat(length(outputs('FlagChips')), ' items flagged'), 'No flags raised'))
