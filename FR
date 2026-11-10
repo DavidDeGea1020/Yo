@@ -1,0 +1,1 @@
+json(if(empty(outputs('Request')?['FinalReviewJSON']), '{}', trim(replace(replace(outputs('Request')?['FinalReviewJSON'], '```json', ''), '```', ''))))
