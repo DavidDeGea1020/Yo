@@ -1,0 +1,1 @@
+concat('<li style="margin:0 0 8px 0;">', if(greater(indexOf(item(), ':'), 0), concat('<b>', substring(item(), 0, add(indexOf(item(), ':'), 1)), '</b>', substring(item(), add(indexOf(item(), ':'), 1), sub(length(item()), add(indexOf(item(), ':'), 1)))), item()), '</li>')
