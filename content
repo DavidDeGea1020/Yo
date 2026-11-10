@@ -1,0 +1,1 @@
+trim(replace(first(split(if(contains(body('Html_to_text'), 'This goes to the manager word for word.'), split(body('Html_to_text'), 'This goes to the manager word for word.')[1], body('Html_to_text')), '[Write above this line.')), decodeUriComponent('%C2%A0'), ' '))
