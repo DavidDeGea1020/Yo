@@ -1,0 +1,1 @@
+if(contains(variables('Html'), '<!--REPEAT:Fix-->'), concat(first(split(variables('Html'), '<!--REPEAT:Fix-->')), join(body('Fix_Html'), ''), last(split(variables('Html'), '<!--/REPEAT:Fix-->'))), variables('Html'))
