@@ -1,0 +1,1 @@
+@not(or(contains(toLower(string(item()?['fix'])), 'grade'), contains(toLower(string(item()?['fix'])), 'salary'), contains(toLower(string(item()?['fix'])), 'exempt'), contains(toLower(string(item()?['fix'])), 'flsa'), contains(toLower(string(item()?['fix'])), 'job code'), contains(toLower(string(item()?['fix'])), 'compensation')))
