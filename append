@@ -1,0 +1,4 @@
+{
+  "Name": "@{outputs('Request')?['HRDocName']}",
+  "ContentBytes": "@{body('Get_Decline_Doc')?['$content']}"
+}
