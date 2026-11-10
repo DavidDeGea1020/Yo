@@ -1,0 +1,1 @@
+sort(union(body('Related_Others'), createArray(outputs('JD'))), 'Title')
