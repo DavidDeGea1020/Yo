@@ -1,0 +1,1 @@
+replace(outputs('Section_Snippet'), '{{Section}}', replace(replace(replace(trim(item()), '&', '&amp;'), '<', '&lt;'), '>', '&gt;'))
