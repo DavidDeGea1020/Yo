@@ -1,0 +1,19 @@
+[
+  {"k": "Preheader",      "raw": "no",  "v": "@{concat('HR reviewed your update to ', outputs('Request')?['Title'], ' and needs a few changes.')}"},
+  {"k": "JobTitle",       "raw": "no",  "v": "@{outputs('Request')?['Title']}"},
+  {"k": "RequesterName",  "raw": "no",  "v": "@{outputs('RequesterName')}"},
+  {"k": "RequestID",      "raw": "no",  "v": "@{outputs('RequestIdText')}"},
+  {"k": "SubmittedDate",  "raw": "no",  "v": "@{outputs('SubmittedDate')}"},
+  {"k": "DeclinedDate",   "raw": "no",  "v": "@{outputs('DeclinedDate')}"},
+  {"k": "HRComments",     "raw": "no",  "v": "@{outputs('Comments')}"},
+  {"k": "DeclinedByName", "raw": "no",  "v": "@{outputs('DeclinedByName')}"},
+  {"k": "FixIntro",       "raw": "no",  "v": "@{outputs('Fixes')?['intro']}"},
+  {"k": "ProposedTitle",  "raw": "no",  "v": "@{outputs('Request')?['ProposedTitle']}"},
+  {"k": "BusinessReason", "raw": "no",  "v": "@{outputs('Request')?['BusinessReason']}"},
+  {"k": "ChangeSummary",  "raw": "yes", "v": "@{outputs('ChangeSummaryHtml')}"},
+  {"k": "DocName",        "raw": "no",  "v": "@{outputs('Request')?['HRDocName']}"},
+  {"k": "DocViewUrl",     "raw": "yes", "v": "@{outputs('DocViewUrl')}"},
+  {"k": "DocDownloadUrl", "raw": "yes", "v": "@{outputs('DocDownloadUrl')}"},
+  {"k": "AgentUrl",       "raw": "yes", "v": "@{outputs('AgentUrl')}"},
+  {"k": "HRContactEmail", "raw": "no",  "v": "@{outputs('HRContactEmail')}"}
+]
