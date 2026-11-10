@@ -1,0 +1,3 @@
+convertFromUtc(outputs('Request')?['Created'], 'Eastern Standard Time', 'MMMM d, yyyy')
+
+convertFromUtc(utcNow(), 'Eastern Standard Time', 'MMMM d, yyyy')
