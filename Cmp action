@@ -1,0 +1,3 @@
+  {"k": "ActionUrl_Approve",  "raw": "yes", "v": "@{concat('mailto:HRConnect@citynational.com?subject=', encodeUriComponent(concat('[APPROVE] JD Request #', body('Get_Request')?['ID'], ' - ', body('Get_Request')?['Title'])), '&body=', encodeUriComponent(concat('Notes for the Compensation team (optional). Leave blank if none.', decodeUriComponent('%0D%0A%0D%0A%0D%0A%0D%0A'), '[Write above this line. Anything below is ignored.]')))}"},
+
+Approve opens an email that sends this request to Compensation, with optional notes. Decline opens an email for your reasons; the manager receives them with AI-suggested fixes.
