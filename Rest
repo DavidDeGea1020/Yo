@@ -1,0 +1,7 @@
+  {"name": "Related",         "keep": "@{if(greater(length(body('Related_Rows')), 1), 'yes', 'no')}"}
+
+if(contains(variables('Html'), '<!--REPEAT:Related-->'), first(split(last(split(variables('Html'), '<!--REPEAT:Related-->')), '<!--/REPEAT:Related-->')), '')
+
+replace(replace(replace(replace(replace(replace(outputs('Related_Snippet'), '{{RelRowBg}}', if(equals(string(item()?['code']), string(body('Get_Request')?['JobCode'])), '#FFF1CC', '#FFFFFF')), '{{RelNote}}', if(equals(string(item()?['code']), string(body('Get_Request')?['JobCode'])), ' (This Job)', '')), '{{RelTitle}}', replace(replace(replace(string(item()?['title']), '&', '&amp;'), '<', '&lt;'), '>', '&gt;')), '{{RelJobCode}}', replace(replace(replace(string(item()?['code']), '&', '&amp;'), '<', '&lt;'), '>', '&gt;')), '{{RelGrade}}', replace(replace(replace(coalesce(string(item()?['grade']), ''), '&', '&amp;'), '<', '&lt;'), '>', '&gt;')), '{{RelSalaryType}}', replace(replace(replace(coalesce(string(item()?['stype']), ''), '&', '&amp;'), '<', '&lt;'), '>', '&gt;'))
+
+if(contains(variables('Html'), '<!--REPEAT:Related-->'), concat(first(split(variables('Html'), '<!--REPEAT:Related-->')), join(body('Related_Html'), ''), last(split(variables('Html'), '<!--/REPEAT:Related-->'))), variables('Html'))
