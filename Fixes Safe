@@ -1,0 +1,1 @@
+concat(item()?['section'], ': ', item()?['fix'])
