@@ -1,0 +1,2 @@
+  {"name": "HRApprovalNotes", "keep": "@{if(empty(outputs('HRApprovalNotes')), 'no', 'yes')}"},
+  {"name": "Related",         "keep": "no"}
