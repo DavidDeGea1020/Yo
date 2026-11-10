@@ -1,0 +1,1 @@
+concat('Your decline for request #', outputs('RequestIdText'), ' (', outputs('Request')?['Title'], ') was sent to ', outputs('RequesterName'), '. ', if(greater(length(body('Fixes_Safe')), 0), concat(length(body('Fixes_Safe')), ' AI-suggested fixes were included.'), 'No AI suggestions were included.'))
