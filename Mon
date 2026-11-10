@@ -1,0 +1,1 @@
+replace(variables('Html'), concat('{{', item()?['k'], '}}'), if(equals(item()?['raw'], 'yes'), string(item()?['v']), replace(replace(replace(replace(replace(string(item()?['v']), '&', '&amp;'), '<', '&lt;'), '>', '&gt;'), decodeUriComponent('%0D'), ''), decodeUriComponent('%0A'), '<br>')))
