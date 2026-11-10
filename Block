@@ -1,0 +1,8 @@
+[
+  {"name": "DeclinedBy", "keep": "@{if(empty(outputs('DeclinedByName')), 'no', 'yes')}"},
+  {"name": "Fixes",      "keep": "@{if(greater(length(body('Fixes_Safe')), 0), 'yes', 'no')}"},
+  {"name": "Title",      "keep": "@{if(and(equals(toLower(string(outputs('Request')?['TitleReviewRequested'])), 'true'), not(empty(outputs('Request')?['ProposedTitle']))), 'yes', 'no')}"},
+  {"name": "DocOk",      "keep": "@{if(empty(outputs('DocViewUrl')), 'no', 'yes')}"},
+  {"name": "DocMissing", "keep": "@{if(empty(outputs('DocViewUrl')), 'yes', 'no')}"},
+  {"name": "AgentLink",  "keep": "@{if(empty(outputs('AgentUrl')), 'no', 'yes')}"}
+]
