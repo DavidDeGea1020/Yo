@@ -1,0 +1,1 @@
+replace(replace(replace(if(startsWith(trim(item()), '- '), trim(substring(trim(item()), 2, sub(length(trim(item())), 2))), trim(item())), '&', '&amp;'), '<', '&lt;'), '>', '&gt;')
