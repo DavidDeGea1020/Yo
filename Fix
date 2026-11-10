@@ -1,0 +1,1 @@
+if(contains(variables('Html'), '<!--REPEAT:Fix-->'), first(split(last(split(variables('Html'), '<!--REPEAT:Fix-->')), '<!--/REPEAT:Fix-->')), '')
