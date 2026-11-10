@@ -1,0 +1,1 @@
+concat('Decline not processed: JD Request #', outputs('RequestIdText'))
