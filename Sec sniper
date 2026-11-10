@@ -1,0 +1,1 @@
+if(contains(variables('Html'), '<!--REPEAT:Section-->'), first(split(last(split(variables('Html'), '<!--REPEAT:Section-->')), '<!--/REPEAT:Section-->')), '')
