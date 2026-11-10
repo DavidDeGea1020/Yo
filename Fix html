@@ -1,0 +1,1 @@
+replace(replace(outputs('Fix_Snippet'), '{{FixSection}}', replace(replace(replace(string(item()?['section']), '&', '&amp;'), '<', '&lt;'), '>', '&gt;')), '{{FixText}}', replace(replace(replace(string(item()?['fix']), '&', '&amp;'), '<', '&lt;'), '>', '&gt;'))
