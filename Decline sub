@@ -1,0 +1,1 @@
+concat('Action needed: your JD update for ', outputs('Request')?['Title'], ' (Request #', outputs('RequestIdText'), ')')
