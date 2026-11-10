@@ -1,0 +1,3 @@
+split(coalesce(outputs('Request')?['SectionsChanged'], ''), ',')
+
+@not(equals(trim(item()), ''))
