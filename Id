@@ -1,0 +1,9 @@
+Field	Value
+Id	int(outputs('RequestIdText'))
+Title	outputs('Request')?['Title']
+RequestStatus Value	Declined
+HRComments	outputs('Comments')
+DeclinedBy	outputs('DeclinedByName')
+DeclinedOn	utcNow()
+DeclineSuggestions	outputs('DeclineSuggestionsText')
+TitleReviewRequested	outputs('Request')?['TitleReviewRequested']
