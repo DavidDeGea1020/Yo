@@ -1,0 +1,1 @@
+coalesce(body('Run_Decline_Prompt')?['responsev2']?['predictionOutput']?['structuredOutput'], json('{"intro":"","fixes":[]}'))
