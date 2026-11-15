@@ -1,0 +1,15 @@
+Update the attached HR Ops review email (formerly the Compensation review email). Change ONLY what is listed; the design otherwise stays the same.
+
+1. In the decision section (currently "Compensation Decision" or your renamed heading), add a third pill button after the existing two, in this order:
+   Approve ({{ActionUrl_CompApprove}}) · Return To HR ({{ActionUrl_CompDecline}}) · Send To Compensation ({{ActionUrl_SendToComp}})
+   Style Send To Compensation as a secondary button: white fill, 2px #1A1A1A border, #1A1A1A text, using the same bulletproof pill button markup as the other buttons (td with mso-padding-alt, a with display:inline-block). Buttons must wrap cleanly on mobile.
+2. Remove the "When You Approve, Fill In" box (Salary Grade / FLSA / Comments). HR Ops does not fill these in. Replace it with a short grey guidance box (same style) that reads:
+   "Approve: completes HR Ops review (notes optional). Return To HR: sends it back to HR with your reasons. Send To Compensation: asks Compensation to review; the request stays with HR Ops."
+3. Keep {{CompActionHelpText}} under the buttons.
+
+Hard rules:
+- Do not rename, remove or duplicate any existing {{placeholder}}, <!--BLOCK:Name--> or <!--REPEAT:Name--> marker. Every BLOCK and REPEAT marker must appear exactly once.
+- The only new placeholder is {{ActionUrl_SendToComp}}.
+- Table layout and inline CSS only, the same MSO wrapper and mobile classes, ASCII-only (HTML entities for anything else).
+
+Deliver: the full updated HTML file, plus a list of placeholders added or removed versus the version I gave you (expected: added {{ActionUrl_SendToComp}}, removed none).
