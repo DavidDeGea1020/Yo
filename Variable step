@@ -1,0 +1,4 @@
+{
+  "Name": "Original HRBP Review - Request @{outputs('RequestIdText')}.eml",
+  "ContentBytes": "@{base64(outputs('Eml'))}"
+}
