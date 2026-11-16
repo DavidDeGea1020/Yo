@@ -1,0 +1,1 @@
+if(empty(outputs('Comments')), 'No reasons were given.', outputs('Comments'))
