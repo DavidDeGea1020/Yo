@@ -1,0 +1,20 @@
+1.	Find Get Request in the flow and note the step directly under it.
+	2.	Hover over the HRApprovedBy Compose. Click and hold its title bar, then drag it down to the + line directly under Get Request and drop it.
+	3.	Do the same with HRApprovalNotes, dropping it under HRApprovedBy.
+	4.	Do the same with HRApprovedDate, dropping it under HRApprovalNotes.
+	5.	Do the same with the three Comp Composes you added in 4.3 (CompRequestedBy, CompRequestNotes, CompRequestedDate), so all six sit together under Get Request.
+	6.	Click Save.
+
+Option 2: if the designer won't let you drag (classic designer)
+
+	1.	On the HRApprovedBy Compose, click ⋯ → Copy to my clipboard.
+	2.	Click the + directly under Get Request → Add an action → My clipboard tab → click the copied action. It pastes with the name HRApprovedBy-copy.
+	3.	Delete the original HRApprovedBy (⋯ → Delete). Then rename the copy to exactly HRApprovedBy.
+	4.	Repeat for HRApprovalNotes and HRApprovedDate.
+	5.	Click Save.
+
+Things to watch:
+
+	•	Get Request must stay after the RequestIdText Compose, because its filter uses that. Only the approval Composes move.
+	•	The name has to match exactly (no "-copy" at the end). The Token List refers to them as outputs('HRApprovedBy'), outputs('HRApprovalNotes') and outputs('HRApprovedDate').
+	•	If Save then shows the same error for a different step (for example the Token List), that step is now above the Composes. Move it below them the same way. Normally it's already further down, so this shouldn't happen.
