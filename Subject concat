@@ -1,0 +1,1 @@
+concat('Returned by HR Ops: JD Request #', outputs('RequestIdText'), ' · ', outputs('Request')?['Title'])
