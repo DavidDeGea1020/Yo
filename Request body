@@ -1,0 +1,1 @@
+concat('Request #', outputs('RequestIdText'), ' (', outputs('Request')?['Title'], ') was returned to the HRBPs. They will decline it to the manager or resend it to HR Ops.')
