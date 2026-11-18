@@ -2,7 +2,7 @@
 
 **What this fixes:** the agent gives up on a flow that hasn't answered within about **100 seconds**. Redline Purpose alone can take around 2.5 minutes on a long Purpose section, so the agent times out even though the flow finishes.
 
-**How:** the flow saves the request and answers the agent straight away. Everything slow happens **after** the answer: redlining, building the Word doc, the HRBP email, and a new email that sends the manager their redlined doc. Steps placed after the response action keep running after the agent has its reply.
+**How:** the flow saves the request and answers the agent straight away. Everything slow happens **after** the answer: redlining, building the Word doc, the HRBP email, and a new email that sends the manager a download link to their redlined doc. Steps placed after the response action keep running after the agent has its reply.
 
 **The new order:**
 
@@ -25,7 +25,7 @@ Parts:
 3. Respond to the agent early
 4. Wrap the slow steps in a scope
 5. Run the redlines in parallel (optional, but faster)
-6. Email the manager their document
+6. Email the manager their download link
 7. Failure alert
 8. Update the Copilot topic
 9. Tests
@@ -173,18 +173,27 @@ The doc only waits for the slowest redline, not the total of all of them. Do thi
 
 ---
 
-## Part 6: Email the manager their document
+## Part 6: Email the manager their download link
 
-The manager no longer gets a download link in the agent's reply. They get the redlined doc by email once it's ready.
+The manager no longer gets a download link in the agent's reply. They get it by email once the doc is ready. The email holds only the link; no attachment.
 
-### 6.1 Get the doc file
-1. Inside **Build And Send**, click **+** directly under the **HRBP email child flow** step.
-2. **Add an action** → **SharePoint** → **Get file content** → rename `Get Doc For Manager`.
-   - **Site Address:** the site where the doc is saved (same as **Create file**).
-   - **File Identifier:** **Dynamic content** → **Create file** → **Id**. Use the **Create file** step's actual name if you renamed it.
+### 6.1 Build the download link
+Your flow already builds this link: it's the one the response action used to send back to the agent. Reuse that exact value so the link behaves the same as before.
+
+1. Open **Save JD Update Request - Backup** (from Part 1.1) in a second browser tab → **Edit** → click its **response action**.
+2. Find the download link output you deleted in Part 3.1. Hover its value and copy the expression (click into it → **Expression** tab → select all → copy). If the value is plain dynamic content rather than an expression (for example **HRDocLink**), note which step and field it comes from.
+3. Back in **Save JD Update Request**, inside **Build And Send**, click **+** directly under the **HRBP email child flow** step → **Add an action** → **Compose** → rename `Manager Download Link`.
+4. **Inputs:** paste the expression from step 2 (**Expression** tab → paste → **Add**), or pick the same dynamic content.
+5. **Save**. If Save shows an "invalid reference" error, the expression names a step that was renamed or moved. Re-insert that part from **Dynamic content**.
+
+**If the old output didn't hold a download link**, build one from **Create file** instead:
+```
+concat('https://YOURTENANT.sharepoint.com/sites/YOURSITE', '/_layouts/15/download.aspx?SourceUrl=', encodeUriComponent(concat('https://YOURTENANT.sharepoint.com/sites/YOURSITE', outputs('Create_file')?['body/Path'])))
+```
+Replace both `https://YOURTENANT.sharepoint.com/sites/YOURSITE` with the site where the doc is saved (no slash at the end), and `Create_file` with your Create file step's name (spaces become underscores).
 
 ### 6.2 Send the email
-1. Under **Get Doc For Manager**: **+** → **Add an action** → **Office 365 Outlook** → **Send an email from a shared mailbox (V2)** → rename `Email Manager Their Doc`.
+1. Under **Manager Download Link**: **+** → **Add an action** → **Office 365 Outlook** → **Send an email from a shared mailbox (V2)** → rename `Email Manager Their Doc`.
 2. **Original Mailbox Address:** `HRConnect@citynational.com`
 3. **To:** the manager's email, from the same source your flow already uses for the requester. For example, the trigger's requester email input, or **Create item → RequestedBy** if that column holds the email.
 4. **Subject:** **Expression** →
@@ -193,24 +202,17 @@ concat('Your JD update request #', outputs('Create_item')?['body/ID'], ' - ', ou
 ```
 5. **Body:** click **</>** (code view) → paste:
 ```
-<p>Hi,</p>
-<p>Your job description update request <b>#@{outputs('Create_item')?['body/ID']}</b> for <b>@{outputs('Create_item')?['body/Title']}</b> was submitted to HR.</p>
-<p>Your redlined copy is attached. Removed text is struck through and added text is highlighted.</p>
-<p>Your HR Business Partner will review it. If anything needs to change, you'll get an email from HR.</p>
-<p>Job Description Expert</p>
+<p>Your redlined job description for request <b>#@{outputs('Create_item')?['body/ID']}</b> is ready: <a href="@{outputs('Manager_Download_Link')}">Download your document</a></p>
 ```
    The `@{...}` parts show as dynamic content after you switch back from code view.
-6. **Show advanced options** (or **Advanced parameters** → tick **Attachments**):
-   - **Attachments Name - 1:** **Dynamic content** → **Create file** → **Name**
-   - **Attachments Content - 1:** **Dynamic content** → **Get Doc For Manager** → **File Content**
-7. **Importance:** Normal.
-8. **Save**.
+6. Leave **Attachments** empty.
+7. **Save**.
 
-> This doc is the same one the manager could already download. It holds none of the restricted fields (Grade, Job Code, Salary Type, Status), so it's safe to send.
+> The link only works for people with access to the file. It's the same link the agent used to give the manager, so they already have access. If a manager gets "access denied", check the library's permissions for requesters.
 
 ### 6.3 Optional: send it even if the HRBP email fails
-By default, if the HRBP email child flow fails, the steps under it inside the scope are skipped. If you want the manager to get their doc either way:
-1. **Get Doc For Manager** → **⋯** → **Settings** (or **Run after**).
+By default, if the HRBP email child flow fails, the steps under it inside the scope are skipped. If you want the manager to get their link either way:
+1. **Manager Download Link** → **⋯** → **Settings** (or **Run after**).
 2. For the HRBP email step, tick **is successful** and **has failed**.
 
 The failure alert in Part 7 still fires, because the scope as a whole fails.
@@ -275,7 +277,7 @@ The flow's outputs changed, so the topic's flow action needs refreshing, and the
 1. Find the **Message** node (or adaptive card) after the flow action that shows the download link or doc name.
 2. Remove the download link, button or doc-name variable.
 3. Replace the text with, for example:
-   > Your update request **#{Topic.RequestID}** was submitted to HR. You'll get an email in a few minutes with your redlined document attached. Your HR Business Partner will review it and follow up by email if anything needs to change.
+   > Your update request **#{Topic.RequestID}** was submitted to HR. You'll get an email in a few minutes with a link to download your redlined document. Your HR Business Partner will review it and follow up by email if anything needs to change.
 
    Insert the RequestID variable with **{x}**, using your topic's actual variable name.
 4. If an adaptive card shows the link, delete the link element or button from the card JSON.
@@ -295,7 +297,7 @@ The flow's outputs changed, so the topic's flow action needs refreshing, and the
 | 2 | Same run, in **Run history** | The run shows **Running** for a few minutes, then **Succeeded**. The **Respond** step's timestamp is seconds after the start. |
 | 3 | Same run, SharePoint item | Doc link and name are filled. **TitleReviewRequested** and **RequestStatus** are unchanged. |
 | 4 | Same run, HRBP mailbox | The HRBP review email arrives with the doc, as before. |
-| 5 | Same run, manager's inbox | **Email Manager Their Doc** arrives with the .docx attached. It opens in desktop Word. |
+| 5 | Same run, manager's inbox | **Email Manager Their Doc** arrives with the download link. Clicking it downloads the .docx, which opens in desktop Word. |
 | 6 | A short request with **no title review** | Same as tests 1–5. TitleReviewRequested stays **No**. |
 | 7 | **Forced failure**: inside **Build And Send**, add a temporary **Compose** with Expression `int('x')` right after the first redline step, then submit | The agent still confirms. HR gets **Alert HR Build Failed**, the manager gets **Tell Manager Delayed**, and the run shows **Failed**. **Delete the temporary Compose afterwards** and save. |
 
@@ -311,6 +313,7 @@ The flow's outputs changed, so the topic's flow action needs refreshing, and the
 | TitleReviewRequested or RequestStatus changes after submit | Save Doc Link left a Yes/No or Choice column blank | Map each one to Create item's value (Part 2.2 Step 3). |
 | HRBP email has no doc, or a "File Not Found" link | The HRBP child flow runs before Save Doc Link | Move the child flow step below Save Doc Link (Part 4.2). |
 | Agent shows an error after you refreshed the flow | The topic still uses a deleted output variable | Part 8.2 and 8.3. |
-| Manager email has no attachment | Attachments Content is blank, or uses the wrong step | **Attachments Content - 1** → Get Doc For Manager → **File Content**. |
+| Manager's link shows File Not Found | The link is built from the wrong path or site | Use the exact expression the old response output used (Part 6.1). |
+| Manager's link shows access denied | The manager has no access to the file | Check the doc library's permissions for requesters. |
 | The redlines didn't speed up | They still run in sequence, or the doc step sits inside one branch | Part 5. The doc step must sit below all branches. |
 | Failure alert fires on every run | **If Build Failed** has **is successful** ticked | Part 7.1 step 2: untick it. |
